@@ -1,0 +1,702 @@
+Prowler — Website Product Specification (Phase 1)
+
+Design & UI
+
+The website should be built with a modern frontend using HTML5, CSS3 and JavaScript, with any additional technologies required for performance and functionality.
+
+Design Language
+
+* Modern Apple-inspired Liquid Glass interface
+* Dark theme throughout
+* Blue accent buttons
+* White typography
+* Green for positive metrics and profits
+* Red for negative metrics and losses
+* No gradients
+* No mesh backgrounds
+* No neon aesthetic
+* No clutter
+* Minimalistic layout with premium glass cards
+* Soft shadows and subtle borders
+* Responsive animations
+* Mobile-first design
+* Fully responsive for desktop and mobile
+* Fast loading and optimized performance
+
+⸻
+
+Homepage
+
+The homepage should serve as both a landing page and the primary analytics interface.
+
+It should contain:
+
+* Hero section introducing Prowler
+* Large “Analyze Token” search box positioned near the top
+* Easy paste functionality
+* One-click Analyze button
+* Recent searches (optional)
+* Feature overview
+* Supported data providers
+* Why use Prowler section
+* Footer
+
+There is no user dashboard.
+
+Everything starts from the homepage.
+
+⸻
+
+Authentication
+
+Users can browse the homepage without signing in.
+
+Users must create an account before they can:
+
+* Save watchlists
+* Link Telegram
+* Receive alerts
+
+Authentication:
+
+* Email
+* Password
+
+⸻
+
+Token Analytics
+
+Users paste any Solana SPL Token Mint Address (CA).
+
+The system returns a detailed live report.
+
+General Information
+
+Display:
+
+* Token Name
+* Token Symbol
+* Token Logo
+* Token Banner (if available)
+* Token Description / Thesis
+* Contract Address
+* Copy CA button
+* Launchpad
+* Token Age
+* Migration Status
+* Boost Status
+
+⸻
+
+Social Links
+
+Display dedicated sections for:
+
+* X (Twitter)
+* Telegram
+* Website
+* Discord
+* GitHub
+* Other available socials
+
+If unavailable:
+
+Leave the section empty with a clear indication that no verified link exists.
+
+⸻
+
+Market Information
+
+Display live:
+
+* Market Cap
+* Fully Diluted Valuation (FDV)
+* Liquidity
+* Volume (24H)
+* Buy Volume
+* Sell Volume
+* ATH
+* Current Price
+* Price Change
+* Total Holders
+* Buyers
+* Sellers
+
+If Liquidity is below $1,000:
+
+Display a visible caution warning.
+
+⸻
+
+DEX Status
+
+Display:
+
+* DEX Paid Status
+* Green check if paid
+* Red indicator if unpaid
+
+⸻
+
+Liquidity
+
+Display:
+
+* Current LP
+* LP Percentage
+* Liquidity Lock Status (if available)
+
+⸻
+
+Developer Information
+
+Display:
+
+* Estimated Developer Wallet
+* Current Holdings
+* Tokens Sold
+* Remaining Holdings
+* Percentage Owned
+* Total Fees Generated
+* Total Fees Claimed
+* How many coins he launched and how many graduated and can show an expanded list of the tokens and their ATH
+
+⸻
+
+First 10 Buyers
+
+Display the first ten buyers in launch order.
+
+For each wallet show:
+
+* Wallet Address
+* Solscan link
+* Entry Time
+* Amount Purchased
+* Current Holdings
+* Tokens Sold
+* Holding Percentage
+* Current PnL
+* Profit/Loss indicator
+* Green for profit
+* Red for loss
+
+⸻
+
+Wallet Relationship Detection
+
+Analyze the first ten buyers.
+
+Determine whether they have:
+
+* Previous transactions with each other
+* Shared funding wallets
+* Direct SOL transfers
+* Historical interactions
+
+Display:
+
+* Connected
+* Not Connected
+
+Every wallet should include a Solscan button for additional research.
+
+⸻
+
+Top Holders
+
+Display:
+
+Top holders ranked by percentage.
+
+Each holder should display:
+
+* Wallet
+* Solscan link
+* Holding %
+* Token Balance
+* Current PnL
+* Profit/Loss color
+* Estimated Wallet Type (Whale, Trader, Fresh Wallet, etc. when available)
+
+⸻
+
+Trading Activity
+
+Display live:
+
+* Total Buys
+* Total Sells
+* Buy Volume
+* Sell Volume
+* Buyers
+* Sellers
+* Buy/Sell Ratio
+
+Updates should happen in real time whenever new market activity is detected.
+
+⸻
+
+Watchlist
+
+Each token should include an Add to Watchlist button.
+
+When added:
+
+* Token is saved to the user’s account
+* Telegram-linked users receive alerts
+
+Alert example:
+
+* 20% increase
+* 20% decrease
+* Significant developer activity
+* Major holder movement
+
+⸻
+
+Real-Time Updates
+
+The page should automatically refresh live data without requiring a manual reload.
+
+Examples include:
+
+* Market Cap
+* Price
+* Liquidity
+* Volume
+* Holders
+* Buys
+* Sells
+* Developer holdings
+* Wallet changes
+* Watchlist alerts
+
+⸻
+
+User Experience
+
+The interface should prioritize readability and speed.
+
+Users should understand a token within seconds.
+
+Requirements:
+
+* Large readable typography
+* Clear section spacing
+* Minimal clicks
+* Copy buttons where appropriate
+* Mobile-friendly cards
+* Smooth animations
+* Fast loading
+* Clean visual hierarchy
+
+⸻
+
+Mobile Optimization
+
+The mobile experience is a priority.
+
+Requirements:
+
+* Responsive layout
+* Large touch targets
+* Easy scrolling
+* Sticky search bar
+* Optimized cards
+* Mobile navigation
+* Fast rendering
+
+Desktop should preserve the same premium experience with expanded layouts.
+
+⸻
+
+Wallet Analytics
+
+The homepage should also include an “Analyze Wallet” button.
+
+Selecting it opens a dedicated Wallet Intelligence page.
+
+This feature will be specified separately in Phase 2.
+
+
+
+Prowler — Infrastructure & Technical Stack
+
+The architecture should be production-ready, scalable, and optimized for performance while remaining cost-effective during the MVP stage.
+
+---
+
+Frontend
+
+Vercel
+
+Host the frontend on Vercel.
+
+Responsibilities:
+
+- Deploy the website
+- Global CDN
+- Automatic HTTPS
+- Fast page loading
+- Continuous deployment from GitHub
+- Responsive HTML/CSS/JavaScript frontend
+
+The frontend should only communicate with the backend API and should never expose private API keys.
+
+---
+
+Backend
+
+The backend should be built using:
+
+- Python 3.12+
+- FastAPI
+- Uvicorn
+- SQLAlchemy ORM
+- Pydantic
+- httpx (Async HTTP Client)
+
+Responsibilities:
+
+- Receive requests from the frontend
+- Validate Solana token addresses
+- Fetch data from external APIs
+- Merge multiple API responses into one clean response
+- Perform blockchain analytics
+- Handle authentication
+- Manage watchlists
+- Manage cached responses
+- Return optimized JSON to the frontend
+
+The backend should expose REST endpoints such as:
+
+- POST /analyze
+- GET /token/{mint}
+- POST /login
+- POST /register
+- GET /watchlist
+
+---
+
+Database
+
+Use Supabase PostgreSQL.
+
+Supabase will manage:
+
+- User accounts
+- Authentication
+- Watchlists
+- Search history
+- Cached analytics
+- Saved user preferences
+
+Authentication should use:
+
+- Email
+- Password
+- JWT Sessions
+
+Suggested database tables:
+
+- users
+- watchlists
+- search_history
+- cached_tokens
+- cached_wallets
+- developer_cache
+- token_cache
+
+---
+
+Blockchain & Market Data APIs
+
+The backend should integrate with the following providers.
+
+Helius
+
+Primary Solana blockchain provider.
+
+Responsibilities:
+
+- SPL Token Metadata
+- Transactions
+- Wallet History
+- Holder Information
+- Token Accounts
+- Enhanced Transactions
+- DAS API
+- Developer Wallet Analysis
+
+---
+
+DexScreener
+
+Responsibilities:
+
+- Live Price
+- Market Cap
+- Liquidity
+- Volume
+- Buy/Sell Activity
+- Price Changes
+- Trading Pairs
+
+---
+
+Birdeye
+
+Responsibilities:
+
+- Historical Price Data
+- FDV
+- ATH
+- Holder Analytics
+- Market Statistics
+- Charts
+- Historical Metrics
+
+---
+
+RugCheck
+
+Responsibilities:
+
+- Token Security
+- Mint Authority
+- Freeze Authority
+- Liquidity Information
+- Risk Assessment
+- Contract Safety
+
+---
+
+Pump.fun (Optional)
+
+Used only for Pump.fun launched tokens.
+
+Responsibilities:
+
+- Launchpad Detection
+- Migration Status
+- Graduation Status
+
+---
+
+Caching
+
+Use Redis (Upstash Redis for MVP).
+
+Redis is used only as temporary memory.
+
+It should cache frequently requested analytics to reduce API usage and improve response times.
+
+Examples:
+
+- Market Cap
+- Liquidity
+- Price
+- Holder Count
+- Token Metadata
+- Volume
+- Developer Analytics
+
+Redis should never replace the PostgreSQL database.
+
+---
+
+Real-Time Updates
+
+Use FastAPI WebSockets.
+
+Real-time updates should automatically refresh:
+
+- Price
+- Market Cap
+- Liquidity
+- Volume
+- Buy/Sell Activity
+- Holder Count
+- Developer Holdings
+
+The user should never need to manually refresh the page.
+
+---
+
+Charts
+
+Use TradingView Lightweight Charts.
+
+Charts should display:
+
+- Price History
+- Market Cap History
+- Volume History
+
+The design should match the dark Liquid Glass interface.
+
+---
+
+Storage
+
+Use Supabase Storage for any uploaded assets or cached media if required in future phases.
+
+---
+
+Domain & Security
+
+Use Cloudflare.
+
+Responsibilities:
+
+- DNS Management
+- SSL Certificates
+- CDN
+- DDoS Protection
+- Performance Optimization
+
+---
+
+API Flow
+
+The frontend should never communicate directly with blockchain APIs.
+
+Instead, requests should follow this architecture:
+
+User
+
+↓
+
+Frontend (Vercel)
+
+↓
+
+FastAPI Backend
+
+↓
+
+Helius
+
+↓
+
+DexScreener
+
+↓
+
+Birdeye
+
+↓
+
+RugCheck
+
+↓
+
+Merge Responses
+
+↓
+
+Cache in Redis
+
+↓
+
+Return Clean JSON
+
+↓
+
+Frontend UI
+
+This ensures API keys remain secure while allowing the backend to normalize, cache, and optimize all responses.
+
+---
+
+Custom Analytics Engine
+
+Certain analytics should be built internally rather than relying on external APIs.
+
+These include:
+
+- Developer Wallet Detection
+- First 10 Buyer Analysis
+- Wallet Relationship Detection
+- Shared Funding Wallet Detection
+- Whale Classification
+- Fresh Wallet Classification
+- Developer Launch History
+- Developer Graduation Statistics
+- Developer Holdings
+- Developer Selling Activity
+- Wallet PnL Estimation
+
+These features should combine blockchain data from Helius with proprietary analytics performed by the backend.
+
+---
+
+Hosting Summary
+
+Frontend
+
+- Vercel
+
+Backend
+
+- Render (MVP) or VPS (Production)
+
+Database
+
+- Supabase PostgreSQL
+
+Authentication
+
+- Supabase Auth
+
+Storage
+
+- Supabase Storage
+
+Caching
+
+- Upstash Redis
+
+DNS & Security
+
+- Cloudflare
+
+---
+
+Environment Variables
+
+The backend should support the following environment variables:
+
+SUPABASE_URL
+
+SUPABASE_ANON_KEY
+
+SUPABASE_SERVICE_ROLE_KEY
+
+HELIUS_API_KEY
+
+BIRDEYE_API_KEY
+
+RUGCHECK_API_KEY
+
+REDIS_URL
+
+JWT_SECRET
+
+FRONTEND_URL
+
+API_BASE_URL
+
+PORT
+
+---
+
+Scalability
+
+The system should be designed so additional services (Telegram alerts, Wallet Intelligence, AI analysis, trading integrations, etc.) can be added in future phases without requiring significant architectural changes.
+
+The MVP should prioritize performance, modularity, maintainability, and clean separation between the frontend, backend, database, blockchain providers, and analytics engine.
+
+
+ Ass the logo as well
