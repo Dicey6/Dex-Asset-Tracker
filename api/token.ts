@@ -8,7 +8,6 @@ import {
   optionalProvider,
   queryValue,
   sendJson,
-  shortAddress,
   type ApiRequest,
   type ApiResponse,
   type JsonRecord,

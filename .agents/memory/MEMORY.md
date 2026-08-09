@@ -1,1 +1,0 @@
-- [Vercel website layout](vercel-website-layout.md) — Dyorly is intentionally a standalone root-level Vite site; keep deployment config and app files at repository root.

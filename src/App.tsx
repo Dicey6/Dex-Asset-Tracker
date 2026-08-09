@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
-  Activity, ArrowDownRight, ArrowUpRight, BarChart3, Check, ChevronDown, CircleHelp,
-  Clipboard, Copy, ExternalLink, Globe2, Link2, LoaderCircle, LockKeyhole, Menu,
+  Activity, ArrowDownRight, ArrowUpRight, BarChart3, Check, CircleHelp,
+  Clipboard, Copy, ExternalLink, Link2, LoaderCircle, Menu,
   Search, ShieldCheck, Star, UserRound, WalletCards, X, Zap
 } from 'lucide-react';
 import { analyzeToken, analyzeWallet } from './lib/api';
@@ -87,27 +87,6 @@ function ProviderPills({ providers }: { providers: ProviderStatus[] }) {
   );
 }
 
-function AuthPanel({ onClose }: { onClose: () => void }) {
-  const [mode, setMode] = useState<'signin' | 'register'>('signin');
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-      <div className="glass entrance w-full max-w-[420px] rounded-2xl p-6">
-        <div className="flex items-start justify-between">
-          <div><div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-lime-300"><LockKeyhole className="h-5 w-5 text-slate-950" /></div><h2 className="text-xl font-semibold text-white">{mode === 'signin' ? 'Welcome back' : 'Create your Dyorly account'}</h2><p className="mt-1 text-sm text-slate-400">Watchlists are coming next. The live analysis desk is open now.</p></div>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-500 transition hover:bg-slate-800 hover:text-white"><X className="h-5 w-5" /></button>
-        </div>
-        <div className="mt-6 space-y-3">
-          {mode === 'register' && <input className="h-11 w-full rounded-lg border border-slate-700 bg-slate-900/80 px-3 text-sm outline-none placeholder:text-slate-600 focus:border-blue-300" placeholder="Your name" />}
-          <input type="email" className="h-11 w-full rounded-lg border border-slate-700 bg-slate-900/80 px-3 text-sm outline-none placeholder:text-slate-600 focus:border-blue-300" placeholder="Email address" />
-          <input type="password" className="h-11 w-full rounded-lg border border-slate-700 bg-slate-900/80 px-3 text-sm outline-none placeholder:text-slate-600 focus:border-blue-300" placeholder="Password" />
-          <button onClick={onClose} className="flex h-11 w-full items-center justify-center rounded-lg bg-blue-300 text-sm font-bold text-slate-950 transition hover:bg-blue-200">{mode === 'signin' ? 'Sign in' : 'Create account'} <ArrowUpRight className="ml-2 h-4 w-4" /></button>
-        </div>
-        <p className="mt-5 text-center text-xs text-slate-500">{mode === 'signin' ? 'New to Dyorly?' : 'Already have an account?'} <button onClick={() => setMode(mode === 'signin' ? 'register' : 'signin')} className="font-semibold text-blue-300 hover:text-blue-200">{mode === 'signin' ? 'Register' : 'Sign in'}</button></p>
-      </div>
-    </div>
-  );
-}
-
 function EmptyState({ title, text }: { title: string; text: string }) {
   return <div className="glass rounded-xl p-6"><CircleHelp className="h-5 w-5 text-blue-300" /><h3 className="mt-4 font-semibold text-slate-200">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{text}</p></div>;
 }
@@ -189,7 +168,6 @@ export default function App() {
   const [wallet, setWallet] = useState<WalletAnalysis | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const placeholder = mode === 'token' ? 'Paste token address or symbol' : 'Paste Solana wallet address';
   const activeData = useMemo(() => mode === 'token' ? token : wallet, [mode, token, wallet]);
@@ -227,7 +205,7 @@ export default function App() {
           <button onClick={() => { setMode('wallet'); setMobileNav(false); }} className={`rounded-lg px-3 py-2 text-sm transition hover:bg-slate-800 hover:text-white ${mode === 'wallet' ? 'text-white' : 'text-slate-300'}`}>Analyze wallet</button>
           <a href="#providers" className="rounded-lg px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white">Providers</a>
         </nav>
-        <div className="flex items-center gap-2"><button onClick={() => setAuthOpen(true)} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-500 hover:text-white sm:flex"><Star className="h-4 w-4 text-lime-300" /> Watchlist</button><button onClick={() => setAuthOpen(true)} className="hidden rounded-lg bg-blue-300 px-3.5 py-2 text-sm font-bold text-slate-950 transition hover:bg-blue-200 sm:block">Sign in</button><button onClick={() => setMobileNav(!mobileNav)} className="rounded-lg border border-slate-700 p-2 text-slate-300 md:hidden">{mobileNav ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button></div>
+         <div className="flex items-center gap-2"><button onClick={() => setMobileNav(!mobileNav)} className="rounded-lg border border-slate-700 p-2 text-slate-300 md:hidden">{mobileNav ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button></div>
       </div></header>
 
       <main><section className="relative mx-auto max-w-[1440px] px-4 pb-12 pt-16 sm:px-6 sm:pt-20 lg:px-10 lg:pb-16"><div className="pointer-events-none absolute left-[10%] top-16 h-40 w-40 rounded-full bg-lime-300/5 blur-3xl" /><div className="relative grid items-end gap-10 lg:grid-cols-[1fr_480px]">
@@ -238,7 +216,6 @@ export default function App() {
       {activeData ? mode === 'token' ? <TokenDesk data={token!} /> : <WalletDesk data={wallet!} /> : <div className="mx-auto max-w-[1440px] px-4 pb-14 sm:px-6 lg:px-10"><div className="glass rounded-2xl p-6 text-center sm:p-10"><WalletCards className="mx-auto h-7 w-7 text-blue-300" /><h2 className="mt-4 text-xl font-semibold text-white">Start with a live {mode} read</h2><p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">Paste an address above, or use the sample input to see the provider-backed analysis layout.</p></div></div>}
       </main>
       <footer className="border-t border-slate-800/70 bg-[#0b0e13]"><div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-4 py-8 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-10"><div className="flex items-center gap-3"><img src={dyorlyMark} alt="" className="h-7 w-7 rounded-md object-cover" /><span className="text-sm font-bold tracking-[-.03em]">dyorly<span className="text-lime-300">.</span></span><span className="ml-2 border-l border-slate-800 pl-3 text-xs text-slate-600">Dyor but smarter.</span></div><div className="flex items-center gap-5 text-xs text-slate-500"><a href="#providers" className="transition hover:text-slate-200">Provider status</a><a href="https://x.com" target="_blank" rel="noreferrer" className="transition hover:text-slate-200">X / Twitter</a><span className="mono text-[10px] text-slate-700">v1.0 live desk</span></div></div></footer>
-      {authOpen && <AuthPanel onClose={() => setAuthOpen(false)} />}
     </div>
   );
 }

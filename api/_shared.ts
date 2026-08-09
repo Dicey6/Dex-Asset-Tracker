@@ -83,12 +83,3 @@ export function firstNumber(...values: unknown[]) {
   }
   return null;
 }
-
-export function shortAddress(address: string) {
-  return address.length > 12 ? `${address.slice(0, 6)}...${address.slice(-4)}` : address;
-}
-
-export function formatBalance(value: number | null) {
-  if (value === null || !Number.isFinite(value)) return '—';
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(value);
-}
