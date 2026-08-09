@@ -4,7 +4,12 @@ async function request<T extends object>(path: string, value: string): Promise<T
   const response = await fetch(`${path}?${new URLSearchParams({ address: value })}`, {
     headers: { Accept: 'application/json' },
   });
-  const body = (await response.json()) as T | ApiError;
+  let body: T | ApiError;
+  try {
+    body = (await response.json()) as T | ApiError;
+  } catch {
+    throw new Error(`The analysis service returned an invalid response (${response.status}).`);
+  }
   if (!response.ok) {
     const message = 'error' in body && typeof body.error === 'string' ? body.error : 'The analysis could not be loaded.';
     throw new Error(message);

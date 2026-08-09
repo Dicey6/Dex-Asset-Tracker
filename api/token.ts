@@ -45,10 +45,12 @@ function normalizeHolder(row: JsonRecord, index: number, supply: number | null, 
 
 async function dexPairs(input: string) {
   if (isSolanaAddress(input)) {
-    const body = await fetchJson<{ pairs?: JsonRecord[] }>(`${DEX}/token-pairs/v1/solana/${encodeURIComponent(input)}`);
-    return asArray(body.pairs);
+    // DexScreener returns a bare array from the token-pairs endpoint, unlike
+    // its search endpoint which wraps pairs in a `{ pairs: [...] }` object.
+    const body = await fetchJson<unknown>(`${DEX}/token-pairs/v1/solana/${encodeURIComponent(input)}`);
+    return Array.isArray(body) ? asArray(body) : asArray((body as JsonRecord).pairs);
   }
-  const body = await fetchJson<{ pairs?: JsonRecord[] }>(`${DEX}/latest/dex/search?q=${encodeURIComponent(input)}`);
+  const body = await fetchJson<JsonRecord>(`${DEX}/latest/dex/search?q=${encodeURIComponent(input)}`);
   return asArray(body.pairs).filter((pair) => pair.chainId === 'solana');
 }
 

@@ -38,7 +38,10 @@ export async function fetchJson<T = JsonRecord>(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(url, { ...init, signal: controller.signal });
+    const headers = new Headers(init.headers);
+    if (!headers.has('Accept')) headers.set('Accept', 'application/json');
+    if (!headers.has('User-Agent')) headers.set('User-Agent', 'Dyorly/1.0 (+https://github.com/Dicey6/Dex-Asset-Tracker)');
+    const response = await fetch(url, { ...init, headers, signal: controller.signal });
     const text = await response.text();
     let body: unknown = {};
     try {
