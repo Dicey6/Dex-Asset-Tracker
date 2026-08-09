@@ -1,24 +1,153 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Dyorly — Dyor but smarter</title>
-    <meta name="description" content="Dyorly is Solana token intelligence for seeing the signal before the noise." />
-    <meta name="robots" content="index, follow" />
-    <meta property="og:title" content="Dyorly — Dyor but smarter" />
-    <meta property="og:description" content="See the signal before the noise with Dyorly's Solana token intelligence desk." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Dyorly — Dyor but smarter" />
-    <meta name="twitter:description" content="See the signal before the noise with Dyorly's Solana token intelligence desk." />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content="Dyorly is Solana token intelligence for seeing the signal before the noise.">
+    <meta name="theme-color" content="#0b0e13">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="/">
+          <img src="/dyorly-mark.png" alt="Dyorly" class="brand-mark">
+          <span>dyorly<span class="accent">.</span></span>
+        </a>
+        <nav class="desktop-nav" aria-label="Primary navigation">
+          <a href="#analyze">Analyze DEX</a>
+          <a href="/wallet.html">Analyze wallet</a>
+          <a href="#providers">Providers</a>
+        </nav>
+        <div class="header-actions">
+          <button class="button button-ghost watchlist-button" type="button" data-auth="signin">Watchlist</button>
+          <button class="button button-primary signin-button" type="button" data-auth="signin">Sign in</button>
+          <button class="menu-button" type="button" aria-label="Open menu" aria-expanded="false" data-menu-toggle>
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+      <nav class="mobile-nav" aria-label="Mobile navigation" data-mobile-nav>
+        <a href="#analyze">Analyze DEX <span>↗</span></a>
+        <a href="/wallet.html">Analyze wallet <span>↗</span></a>
+        <a href="#providers">Provider status <span>↓</span></a>
+        <button type="button" data-auth="signup">Create account <span>↗</span></button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero container">
+        <div class="hero-copy entrance">
+          <div class="eyebrow"><span class="status-dot"></span> Solana onchain intelligence</div>
+          <h1>Dyor but smarter.<br><span>See the signal first.</span></h1>
+          <p>Dyorly reads markets, liquidity, holders, developer signals, and wallet behavior through the providers analysts already trust.</p>
+        </div>
+
+        <div class="scan-card glass entrance entrance-delay-1" id="analyze">
+          <div class="scan-card-top">
+            <span class="mono label">Analyze a token</span>
+            <span class="live-label"><span class="status-dot"></span> Live desk</span>
+          </div>
+          <form class="scan-form" data-token-form>
+            <label class="search-field">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input id="asset-input" name="address" autocomplete="off" placeholder="Paste token address or symbol" aria-label="Token address or symbol">
+            </label>
+            <button class="button button-primary analyze-button" type="submit"><span class="button-icon">ϟ</span><span data-analyze-label>Analyze</span></button>
+          </form>
+          <div class="scan-card-footer">
+            <button class="text-button" type="button" data-sample>▣&nbsp; Use sample token</button>
+            <a class="text-button blue" href="/wallet.html">Analyze wallet&nbsp; ↗</a>
+          </div>
+          <p class="scan-hint">Market data is public through DexScreener. Optional provider keys unlock holder and developer enrichment.</p>
+        </div>
+      </section>
+
+      <section class="trust-strip container">
+        <div><span class="trust-number">01</span><span>Paste any Solana token</span></div>
+        <div><span class="trust-number">02</span><span>Compare the market signal</span></div>
+        <div><span class="trust-number">03</span><span>Know what is actually covered</span></div>
+      </section>
+
+      <div class="error-wrap container" data-error hidden>
+        <div class="error-message"><span>!</span><p data-error-text></p><button type="button" data-dismiss-error aria-label="Dismiss error">×</button></div>
+      </div>
+
+      <section class="analysis-section" data-analysis hidden>
+        <div class="container analysis-container">
+          <div class="analysis-heading">
+            <div>
+              <div class="analysis-kicker"><span>Live analysis</span><span class="mono">DexScreener + optional providers</span></div>
+              <div class="asset-heading">
+                <div class="token-avatar" data-token-avatar></div>
+                <div><h2 data-token-name>Token</h2><p class="mono"><span data-token-address></span> <a data-token-solscan target="_blank" rel="noreferrer">↗</a></p></div>
+              </div>
+            </div>
+            <div class="analysis-actions"><button class="button button-ghost" type="button" data-copy>Copy address</button><a class="icon-button" data-pair-link target="_blank" rel="noreferrer" aria-label="Open market">↗</a></div>
+          </div>
+
+          <section class="analysis-block">
+            <div class="section-heading"><div><span class="mono section-number">01 / Market read</span><h3>Token overview</h3></div><span class="mono section-meta">Solana mainnet</span></div>
+            <div class="metric-grid overview-grid">
+              <article class="metric-card large"><div class="metric-top"><div><span class="metric-label">Price</span><strong data-price>—</strong><span class="metric-change" data-price-change>—</span></div><span class="metric-glyph">↗</span></div><div class="signal-bars" data-price-bars></div><div class="metric-foot"><span>market signal</span><span data-pair-date>—</span></div></article>
+              <article class="metric-card"><span class="metric-label">Market cap</span><strong data-market-cap>—</strong><span class="metric-detail" data-fdv>—</span><div class="progress blue"><i></i></div><span class="metric-foot">Live DexScreener estimate</span></article>
+              <article class="metric-card"><span class="metric-label">24h volume</span><strong data-volume>—</strong><span class="metric-detail" data-swaps>—</span><div class="signal-bars short" data-volume-bars></div></article>
+            </div>
+          </section>
+
+          <div class="analysis-columns">
+            <section class="analysis-block">
+              <div class="section-heading"><div><span class="mono section-number">02 / Market structure</span><h3>Liquidity &amp; DEX status</h3></div><span class="mono section-meta" data-pair-count>— venues</span></div>
+              <div class="split-cards"><article class="metric-card"><span class="metric-label">Total liquidity</span><strong data-liquidity>—</strong><span class="metric-detail">Across indexed Solana pairs</span><div class="venue-list" data-venues></div></article><article class="metric-card"><span class="metric-label">Market health</span><strong class="health" data-health>—</strong><span class="metric-detail" data-health-detail>DEX read</span><div class="mini-stat"><span>LP depth</span><b data-lp-depth>—</b></div><div class="mini-stat"><span>LP locked</span><b data-lp-locked>—</b></div></article></div>
+            </section>
+            <section class="analysis-block">
+              <div class="section-heading"><div><span class="mono section-number">03 / Flow</span><h3>Trading activity</h3></div><span class="mono section-meta">last 24 hours</span></div>
+              <article class="metric-card flow-card"><div class="flow-grid"><div><span class="metric-label">Buys</span><strong data-buys>—</strong></div><div><span class="metric-label">Sells</span><strong data-sells>—</strong></div><div><span class="metric-label">Buy / sell</span><strong data-ratio>—</strong></div><div><span class="metric-label">Traders</span><strong>—</strong></div></div><div class="flow-bar"><i data-buy-bar></i></div><div class="flow-caption"><span data-buy-caption>Buy data unavailable</span><span data-sell-caption>Sell data unavailable</span></div></article>
+            </section>
+          </div>
+
+          <div class="analysis-columns">
+            <section class="analysis-block"><div class="section-heading"><div><span class="mono section-number">04 / People behind it</span><h3>Developer intelligence</h3></div></div><article class="metric-card developer-card"><div class="developer-top"><div class="avatar-placeholder">◉</div><div><b>Asset authority</b><span class="mono" data-developer-address>Not returned by provider</span></div><em data-developer-risk>UNKNOWN RISK</em></div><div class="developer-grid"><div><span class="metric-label">Authority share</span><strong data-authority-share>—</strong></div><div><span class="metric-label">Launch history</span><strong>—</strong><small>Needs transaction history</small></div><div><span class="metric-label">Source</span><strong data-developer-source>—</strong></div><div><span class="metric-label">Sell pressure</span><strong>—</strong><small>Needs transaction history</small></div></div><p class="callout">ⓘ Developer history is reported only when provider transaction data can verify it.</p></article></section>
+            <section class="analysis-block"><div class="section-heading"><div><span class="mono section-number">05 / Early conviction</span><h3>Largest indexed holders</h3></div><span class="mono section-meta" data-holder-total>provider snapshot</span></div><article class="metric-card holder-card" data-holders></article></section>
+          </div>
+
+          <div class="analysis-columns">
+            <section class="analysis-block"><div class="section-heading"><div><span class="mono section-number">06 / Wallet graph</span><h3>Relationship detection</h3></div><span class="mono section-meta" data-relationship-source>—</span></div><article class="metric-card graph-card"><div class="graph-lines"><span></span><span></span><span></span><div class="graph-token" data-graph-symbol>TOKEN</div><div class="graph-dots" data-graph-dots></div></div><p class="graph-caption"><span class="status-dot"></span><span data-direct-relations>Transaction history needed</span></p></article></section>
+            <section class="analysis-block"><div class="section-heading"><div><span class="mono section-number">07 / Concentration</span><h3>Top holders</h3></div><span class="mono section-meta" data-top-ten>not calculated</span></div><article class="metric-card concentration-card" data-holder-bars></article></section>
+          </div>
+
+          <section class="analysis-block monitoring-block"><div class="section-heading"><div><span class="mono section-number">08 / Monitoring</span><h3>Signals to keep watching</h3></div><span class="mono section-meta" data-monitoring-coverage>limited coverage</span></div><div class="monitor-grid"><article class="metric-card"><span class="metric-label">DexScreener promotion</span><strong data-paid-orders>—</strong><span class="metric-detail">A promotion is not a safety signal.</span></article><article class="metric-card"><span class="metric-label">Boosts</span><strong data-boosts>—</strong><span class="metric-detail">Public market metadata.</span></article><article class="metric-card warnings-card" data-warnings></article></div></section>
+          <section class="analysis-block early-block" data-early-section hidden><div class="section-heading"><div><span class="mono section-number">09 / Holder snapshot</span><h3>Largest wallets returned</h3></div><span class="mono section-meta">not a transaction timeline</span></div><article class="metric-card holder-card" data-early-wallets></article></section>
+          <section class="provider-footer" id="providers"><div><span class="mono section-number">Signals, not guesses</span><p>Every card is labeled by source. Missing keys create partial coverage, never fake values.</p></div><div class="provider-pills" data-providers></div></section>
+        </div>
+      </section>
+
+      <section class="container why-section">
+        <div class="section-heading"><div><span class="mono section-number">The desk</span><h2>Research the asset, not the hype.</h2></div></div>
+        <div class="why-grid"><article class="why-card"><span>01</span><h3>One address, a full read</h3><p>Start with the contract. Dyorly resolves the strongest Solana market and puts price, liquidity, flow, holders, and risk signals in one view.</p></article><article class="why-card"><span>02</span><h3>Coverage you can see</h3><p>Provider status is always visible. When a key is missing or a source fails, the desk labels the gap instead of inventing a number.</p></article><article class="why-card"><span>03</span><h3>Built for a faster first look</h3><p>Use this as the first pass before deeper research. Jump from the market read to DexScreener or Solscan when you need the source context.</p></article></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner"><a class="brand" href="/"><img src="/dyorly-mark.png" alt="" class="brand-mark small"><span>dyorly<span class="accent">.</span></span></a><span>Dyor but smarter.</span><div><a href="#providers">Provider status</a><a href="https://x.com" target="_blank" rel="noreferrer">X / Twitter</a><span class="mono">v1.0 live desk</span></div></div>
+    </footer>
+
+    <div class="modal-backdrop" data-auth-modal hidden>
+      <section class="auth-modal glass" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+        <button class="modal-close" type="button" data-close-auth aria-label="Close">×</button>
+        <div class="auth-mark">◆</div><span class="mono label">Dyorly access</span>
+        <h2 id="auth-title" data-auth-title>Welcome back</h2>
+        <p data-auth-copy>Sign in to save watchlists and return to your research desk.</p>
+        <form data-auth-form><label data-name-field hidden><span>Name</span><input type="text" placeholder="Your name"></label><label><span>Email</span><input type="email" placeholder="you@example.com" required></label><label><span>Password</span><input type="password" placeholder="••••••••" required></label><button class="button button-primary full" type="submit" data-auth-submit>Sign in <span>↗</span></button></form>
+        <p class="auth-switch"><span data-auth-switch-copy>New to Dyorly?</span> <button type="button" data-auth-switch>Register</button></p>
+        <div class="auth-note" data-auth-note hidden>Account access will be connected in the next release.</div>
+      </section>
+    </div>
+    <script src="/app.js" defer></script>
   </body>
 </html>

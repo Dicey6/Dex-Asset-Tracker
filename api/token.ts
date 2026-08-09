@@ -1,4 +1,4 @@
-import type { ProviderName, ProviderStatus, TokenAnalysis, TokenHolder } from '../src/lib/types';
+import type { ProviderName, ProviderStatus, TokenAnalysis, TokenHolder } from './types';
 import {
   asArray,
   fetchJson,

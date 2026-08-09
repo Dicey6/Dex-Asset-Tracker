@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Wallet analysis — Dyorly</title>
+    <meta name="description" content="Dyorly wallet intelligence is coming soon.">
+    <meta name="theme-color" content="#0b0e13">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="wallet-page">
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="/"><img src="/dyorly-mark.png" alt="Dyorly" class="brand-mark"><span>dyorly<span class="accent">.</span></span></a>
+        <nav class="desktop-nav" aria-label="Primary navigation"><a href="/#analyze">Analyze DEX</a><a class="active" href="/wallet.html">Analyze wallet</a><a href="/#providers">Providers</a></nav>
+        <div class="header-actions"><button class="button button-ghost watchlist-button" type="button" data-auth="signin">Watchlist</button><button class="button button-primary signin-button" type="button" data-auth="signin">Sign in</button><button class="menu-button" type="button" aria-label="Open menu" aria-expanded="false" data-menu-toggle><span></span><span></span><span></span></button></div>
+      </div>
+      <nav class="mobile-nav" aria-label="Mobile navigation" data-mobile-nav><a href="/#analyze">Analyze DEX <span>↗</span></a><a href="/wallet.html">Analyze wallet <span>↗</span></a><a href="/#providers">Provider status <span>↓</span></a><button type="button" data-auth="signup">Create account <span>↗</span></button></nav>
+    </header>
+    <main class="wallet-coming container">
+      <div class="coming-orbit"><span></span><span></span><span></span><div>W</div></div>
+      <span class="eyebrow"><span class="status-dot"></span> Wallet intelligence</span>
+      <h1>Analyze every wallet.<br><span>Coming soon.</span></h1>
+      <p>We’re building the wallet desk now—portfolio history, token flows, concentration, and the signals that matter before you follow a wallet.</p>
+      <div class="coming-actions"><a class="button button-primary" href="/#analyze">Analyze a token <span>↗</span></a><button class="button button-ghost" type="button" data-auth="signup">Get notified <span>↗</span></button></div>
+    </main>
+    <footer class="site-footer"><div class="container footer-inner"><a class="brand" href="/"><img src="/dyorly-mark.png" alt="" class="brand-mark small"><span>dyorly<span class="accent">.</span></span></a><span>Dyor but smarter.</span><div><a href="/#providers">Provider status</a><span class="mono">wallet desk / next</span></div></div></footer>
+    <div class="modal-backdrop" data-auth-modal hidden><section class="auth-modal glass" role="dialog" aria-modal="true" aria-labelledby="auth-title"><button class="modal-close" type="button" data-close-auth aria-label="Close">×</button><div class="auth-mark">◆</div><span class="mono label">Dyorly access</span><h2 id="auth-title" data-auth-title>Welcome back</h2><p data-auth-copy>Sign in to save watchlists and return to your research desk.</p><form data-auth-form><label data-name-field hidden><span>Name</span><input type="text" placeholder="Your name"></label><label><span>Email</span><input type="email" placeholder="you@example.com" required></label><label><span>Password</span><input type="password" placeholder="••••••••" required></label><button class="button button-primary full" type="submit" data-auth-submit>Sign in <span>↗</span></button></form><p class="auth-switch"><span data-auth-switch-copy>New to Dyorly?</span> <button type="button" data-auth-switch>Register</button></p><div class="auth-note" data-auth-note hidden>Account access will be connected in the next release.</div></section></div>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

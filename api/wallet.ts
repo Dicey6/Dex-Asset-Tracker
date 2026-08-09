@@ -1,4 +1,4 @@
-import type { ProviderName, ProviderStatus, WalletActivity, WalletAnalysis, WalletHolding } from '../src/lib/types';
+import type { ProviderName, ProviderStatus, WalletActivity, WalletAnalysis, WalletHolding } from './types';
 import {
   asArray,
   fetchJson,

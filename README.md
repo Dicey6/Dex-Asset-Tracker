@@ -1,13 +1,22 @@
 # Dyorly
 
-Dyor but smarter — a standalone Vite site for Solana token and wallet research.
+Dyorly is a static HTML/CSS/vanilla JavaScript Solana token research desk. Paste a token address or symbol to read live market data from the public DexScreener API, with optional Helius, Birdeye, and Solscan enrichment through the serverless API functions in `api/`.
 
-## Vercel environment variables
+## Deployment
 
-Add these as server-side environment variables in the Vercel project. They are read only by the `/api` functions and are never exposed to the browser:
+This project is designed to deploy from GitHub through Vercel. No local build step, React runtime, or Vite server is required.
 
-- `HELIUS_API_KEY` — portfolio, asset authority, and holder enrichment
-- `BIRDEYE_API_KEY` — token and wallet pricing enrichment
-- `SOLSCAN_API_KEY` — holder verification and wallet activity
+Vercel environment variables:
 
-DexScreener market data is public and works without an API key. The app still returns a useful market view when an optional provider is not configured, and labels any missing coverage in the UI.
+- `HELIUS_API_KEY` — optional portfolio, asset authority, and holder enrichment
+- `BIRDEYE_API_KEY` — optional token and wallet pricing enrichment
+- `SOLSCAN_API_KEY` — optional holder verification and wallet activity
+
+DexScreener is public and is intentionally used without an API key.
+
+## Pages
+
+- `/` — token analysis desk
+- `/wallet.html` — wallet analysis placeholder
+
+The sign-in and sign-up controls are presentation-only until account storage and authentication are connected.

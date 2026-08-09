@@ -105,9 +105,3 @@ export type WalletAnalysis = {
   };
   providers: ProviderStatus[];
 };
-
-export type ApiError = {
-  error: string;
-  code?: string;
-  providers?: ProviderStatus[];
-};
