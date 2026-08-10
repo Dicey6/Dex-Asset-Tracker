@@ -1,0 +1,1 @@
+- [Dyorly provider quirks](dyorly-provider-quirks.md) — Bubblemaps blocks iframe embeds; DexScreener boosts live on any pair; paid orders need explicit approved status; Birdeye token_balance for per-wallet positions.
