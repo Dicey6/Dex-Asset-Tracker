@@ -1,4 +1,4 @@
-import type { ProviderName, ProviderStatus, TokenAnalysis, TokenHolder } from './types';
+import type { ProviderName, ProviderStatus, TokenAnalysis, TokenHolder, EarlyBuyer, TraderSummary, DexBoost } from './types';
 import {
   asArray,
   fetchJson,
@@ -44,8 +44,6 @@ function normalizeHolder(row: JsonRecord, index: number, supply: number | null, 
 
 async function dexPairs(input: string) {
   if (isSolanaAddress(input)) {
-    // DexScreener returns a bare array from the token-pairs endpoint, unlike
-    // its search endpoint which wraps pairs in a `{ pairs: [...] }` object.
     const body = await fetchJson<unknown>(`${DEX}/token-pairs/v1/solana/${encodeURIComponent(input)}`);
     return Array.isArray(body) ? asArray(body) : asArray((body as JsonRecord).pairs);
   }
@@ -79,6 +77,61 @@ async function heliusHolders(address: string, key: string) {
   return body.result ?? {};
 }
 
+async function heliusEarlyBuyers(address: string, key: string): Promise<EarlyBuyer[]> {
+  // Step 1: Get all signatures for the token mint (newest first, limit 1000)
+  const sigsBody = await fetchJson<JsonRecord>(`https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(key)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0', id: 'dyorly',
+      method: 'getSignaturesForAddress',
+      params: [address, { limit: 1000, commitment: 'finalized' }],
+    }),
+  }, 10000);
+
+  const sigs = asArray(sigsBody.result);
+  if (!sigs.length) return [];
+
+  // Oldest transactions are at the end of the array (Helius returns newest first)
+  const oldestSigs = sigs.slice(-20).map((s) => String(s.signature)).filter(Boolean);
+  if (!oldestSigs.length) return [];
+
+  // Step 2: Parse the oldest transactions via Helius enhanced API
+  const txBody = await fetchJson<unknown>(`https://api.helius.xyz/v0/transactions/?api-key=${encodeURIComponent(key)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ transactions: oldestSigs.slice(0, 20) }),
+  }, 10000);
+
+  const buyers = new Map<string, EarlyBuyer>();
+  for (const tx of asArray(txBody as JsonRecord[])) {
+    const ts = firstNumber(tx.timestamp);
+    const sig = String(tx.signature ?? '');
+    for (const transfer of asArray(tx.tokenTransfers)) {
+      const isBuy = String(transfer.mint) === address && transfer.toUserAccount && Number(transfer.tokenAmount) > 0;
+      if (!isBuy) continue;
+      const wallet = String(transfer.toUserAccount);
+      if (!buyers.has(wallet)) {
+        buyers.set(wallet, {
+          address: wallet,
+          firstBuyTimestamp: ts,
+          initialAmount: firstNumber(transfer.tokenAmount),
+          initialAmountFormatted: transfer.tokenAmount
+            ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, notation: 'compact' }).format(Number(transfer.tokenAmount))
+            : '—',
+          signature: sig || null,
+          solscanUrl: `https://solscan.io/account/${wallet}`,
+          solscanTxUrl: sig ? `https://solscan.io/tx/${sig}` : null,
+        });
+      }
+    }
+  }
+
+  return [...buyers.values()]
+    .sort((a, b) => (a.firstBuyTimestamp ?? 0) - (b.firstBuyTimestamp ?? 0))
+    .slice(0, 10);
+}
+
 async function birdeyeOverview(address: string, key: string) {
   return fetchJson<JsonRecord>(`https://public-api.birdeye.so/defi/token_overview?address=${encodeURIComponent(address)}&chain=solana`, {
     headers: { 'X-API-KEY': key, 'x-chain': 'solana' },
@@ -91,10 +144,48 @@ async function birdeyeHolders(address: string, key: string) {
   });
 }
 
+async function birdeyeTopTraders(address: string, key: string) {
+  return fetchJson<JsonRecord>(
+    `https://public-api.birdeye.so/defi/v3/token/top-traders?address=${encodeURIComponent(address)}&time_frame=1W&offset=0&limit=10&sort_by=volume&sort_type=desc`,
+    { headers: { 'X-API-KEY': key, 'x-chain': 'solana' } },
+    12000,
+  );
+}
+
 async function solscanHolders(address: string, key: string) {
   return fetchJson<JsonRecord>(`https://pro-api.solscan.io/v2.0/token/holders?address=${encodeURIComponent(address)}&page=1&page_size=20`, {
     headers: { token: key },
   });
+}
+
+function normalizeTrader(row: JsonRecord): TraderSummary | null {
+  const address = String(row.address ?? row.wallet ?? row.owner ?? '').trim();
+  if (!address) return null;
+
+  const realizedPnl = firstNumber(row.realizedPnl, row.realized_profit, row.realized_pnl, row.pnl);
+  const unrealizedPnl = firstNumber(row.unrealizedPnl, row.unrealized_profit, row.unrealized_pnl);
+  const buyVolume = firstNumber(row.buyVolume, row.buy_volume, row.volumeBuy);
+  const sellVolume = firstNumber(row.sellVolume, row.sell_volume, row.volumeSell);
+  const netBal = firstNumber(row.netTokenBalance, row.net_token_balance, row.balance, row.tokenBalance);
+
+  return {
+    address,
+    volume: firstNumber(row.volume, row.totalVolume, row.total_volume),
+    buyVolume,
+    sellVolume,
+    realizedPnl,
+    unrealizedPnl,
+    totalPnl: realizedPnl !== null && unrealizedPnl !== null ? realizedPnl + unrealizedPnl : (realizedPnl ?? unrealizedPnl),
+    avgBuyPrice: firstNumber(row.avgBuyPrice, row.avg_buy_price, row.averageBuyPrice),
+    avgSellPrice: firstNumber(row.avgSellPrice, row.avg_sell_price, row.averageSellPrice),
+    buyCount: firstNumber(row.buyCount, row.buy_count, row.numBuys) ?? null,
+    sellCount: firstNumber(row.sellCount, row.sell_count, row.numSells) ?? null,
+    netTokenBalance: netBal,
+    netTokenBalanceFormatted: netBal !== null
+      ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, notation: 'compact' }).format(netBal)
+      : '—',
+    solscanUrl: `https://solscan.io/account/${address}`,
+  };
 }
 
 export default async function handler(request: ApiRequest, response: ApiResponse) {
@@ -117,13 +208,24 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   const birdeyeKey = getEnv('BIRDEYE_API_KEY');
   const solscanKey = getEnv('SOLSCAN_API_KEY');
 
-  const [assetResult, heliusHolderResult, birdeyeResult, birdeyeHolderResult, solscanResult, orderResult] = await Promise.all([
-    heliusKey ? optionalProvider(() => heliusAsset(address, heliusKey)) : Promise.resolve({ value: undefined, error: 'HELIUS_API_KEY is not configured' }),
-    heliusKey ? optionalProvider(() => heliusHolders(address, heliusKey)) : Promise.resolve({ value: undefined, error: 'HELIUS_API_KEY is not configured' }),
-    birdeyeKey ? optionalProvider(() => birdeyeOverview(address, birdeyeKey)) : Promise.resolve({ value: undefined, error: 'BIRDEYE_API_KEY is not configured' }),
-    birdeyeKey ? optionalProvider(() => birdeyeHolders(address, birdeyeKey)) : Promise.resolve({ value: undefined, error: 'BIRDEYE_API_KEY is not configured' }),
-    solscanKey ? optionalProvider(() => solscanHolders(address, solscanKey)) : Promise.resolve({ value: undefined, error: 'SOLSCAN_API_KEY is not configured' }),
+  const [
+    assetResult,
+    heliusHolderResult,
+    birdeyeResult,
+    birdeyeHolderResult,
+    birdeyeTraderResult,
+    solscanResult,
+    orderResult,
+    earlyBuyersResult,
+  ] = await Promise.all([
+    heliusKey ? optionalProvider(() => heliusAsset(address, heliusKey)) : Promise.resolve({ value: undefined, error: 'HELIUS_API_KEY not configured' }),
+    heliusKey ? optionalProvider(() => heliusHolders(address, heliusKey)) : Promise.resolve({ value: undefined, error: 'HELIUS_API_KEY not configured' }),
+    birdeyeKey ? optionalProvider(() => birdeyeOverview(address, birdeyeKey)) : Promise.resolve({ value: undefined, error: 'BIRDEYE_API_KEY not configured' }),
+    birdeyeKey ? optionalProvider(() => birdeyeHolders(address, birdeyeKey)) : Promise.resolve({ value: undefined, error: 'BIRDEYE_API_KEY not configured' }),
+    birdeyeKey ? optionalProvider(() => birdeyeTopTraders(address, birdeyeKey)) : Promise.resolve({ value: undefined, error: 'BIRDEYE_API_KEY not configured' }),
+    solscanKey ? optionalProvider(() => solscanHolders(address, solscanKey)) : Promise.resolve({ value: undefined, error: 'SOLSCAN_API_KEY not configured' }),
     optionalProvider(() => fetchJson<JsonRecord>(`${DEX}/orders/v1/solana/${encodeURIComponent(address)}`)),
+    heliusKey ? optionalProvider(() => heliusEarlyBuyers(address, heliusKey)) : Promise.resolve({ value: undefined, error: 'HELIUS_API_KEY not configured' }),
   ]);
 
   const asset = assetResult.value ?? {};
@@ -139,11 +241,20 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     .filter((row): row is TokenHolder => Boolean(row))
     .slice(0, 10);
 
+  const traderRows = birdeyeTraderResult.value ? extractRows(birdeyeTraderResult.value) : [];
+  const topTraders: TraderSummary[] = traderRows
+    .map((row) => normalizeTrader(row))
+    .filter((t): t is TraderSummary => Boolean(t))
+    .slice(0, 10);
+
+  const earlyBuyers: EarlyBuyer[] = earlyBuyersResult.value ?? [];
+
   const birdeyeData = birdeyeResult.value?.data ?? {};
   const priceUsd = firstNumber(pair.priceUsd, birdeyeData.value, birdeyeData.price);
   const volume24h = firstNumber(pair.volume?.h24, birdeyeData.volume24h);
   const marketCap = firstNumber(pair.marketCap, birdeyeData.mc, birdeyeData.marketCap);
   const liquidityTotal = pairs.reduce((sum, item) => sum + (firstNumber(item.liquidity?.usd) ?? 0), 0) || null;
+
   const venues = pairs
     .map((item) => ({ name: String(item.dexId ?? 'Unknown DEX'), liquidityUsd: firstNumber(item.liquidity?.usd) ?? 0 }))
     .filter((item) => item.liquidityUsd > 0)
@@ -155,13 +266,26 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     }, [])
     .sort((a, b) => b.liquidityUsd - a.liquidityUsd)
     .slice(0, 5);
+
   const top10Percentage = holders.some((holder) => holder.percentage !== null)
     ? holders.reduce((sum, holder) => sum + (holder.percentage ?? 0), 0)
     : null;
+
   const authority = asArray(asset.authorities).find((item) => item.address)?.address
     ?? asset.authority?.address
     ?? null;
   const developerHolder = authority ? holders.find((holder) => holder.address === authority) : undefined;
+
+  // DexScreener boosts — check pair.boosts field and also top boosts endpoint
+  const pairBoosts = pair.boosts as JsonRecord | undefined;
+  const boostActive = firstNumber(pairBoosts?.active) ?? 0;
+  const dexBoosts: DexBoost | null = boostActive > 0
+    ? { active: boostActive, totalAmount: firstNumber(pairBoosts?.amount, pairBoosts?.totalAmount) }
+    : null;
+
+  const paidOrdersList = asArray(orderResult.value);
+  const paidOrderTypes = paidOrdersList
+    .map((o) => String(o.type ?? o.orderType ?? '')).filter(Boolean);
 
   const warnings = [
     !heliusKey ? 'Holder and developer signals are limited until HELIUS_API_KEY is configured.' : '',
@@ -169,6 +293,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     !solscanKey ? 'Solscan holder verification is unavailable until SOLSCAN_API_KEY is configured.' : '',
     pair.liquidity?.usd && Number(pair.liquidity.usd) < 25000 ? 'Low liquidity can make exits materially worse than the quoted price.' : '',
   ].filter(Boolean);
+
   const providers = [
     provider('DexScreener', true, true),
     provider('Helius', Boolean(heliusKey), Boolean(assetResult.value), assetResult.error),
@@ -191,7 +316,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       sells24h: firstNumber(pair.txns?.h24?.sells),
       pairCreatedAt: pair.pairCreatedAt ? new Date(Number(pair.pairCreatedAt)).toISOString() : null,
       websites: asArray(pair.info?.websites).map((site) => String(site.url ?? '')).filter(Boolean),
-      socials: asArray(pair.info?.socials).map((social) => ({ type: String(social.type ?? 'social'), url: String(social.url ?? '') })).filter((social) => social.url),
+      socials: asArray(pair.info?.socials).map((s) => ({ type: String(s.type ?? 'social'), url: String(s.url ?? '') })).filter((s) => s.url),
       pairUrl: String(pair.url ?? '') || null,
     },
     liquidity: {
@@ -205,29 +330,28 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       top10Percentage,
       totalKnown: firstNumber(solscanResult.value?.total, birdeyeHolderResult.value?.total, heliusHolderResult.value?.total),
     },
+    topTraders,
+    earlyBuyers,
     developer: {
       address: authority,
       balancePercentage: developerHolder?.percentage ?? null,
       source: authority ? 'Helius asset authority' : 'Not available',
       risk: developerHolder?.percentage !== null && developerHolder && developerHolder.percentage > 10 ? 'high' : authority ? 'unknown' : 'unknown',
     },
-    earlyWallets: holders.slice(0, 5).map((holder) => ({
-      address: holder.address,
-      amount: holder.balance,
-      status: 'Unknown',
-      source: solscanRows.length ? 'Solscan holder snapshot' : heliusRows.length ? 'Helius holder snapshot' : 'Birdeye holder snapshot',
-    })),
+    dexBoosts,
     relationships: {
-      wallets: holders.slice(0, 5).map((holder) => holder.address),
+      wallets: holders.slice(0, 5).map((h) => h.address),
       directCount: 0,
       source: holders.length ? 'Top-holder overlap requires transaction history' : 'Not available',
     },
     monitoring: {
-      boosts: null,
-      paidOrders: orderResult.value ? asArray(orderResult.value).length > 0 : null,
+      boosts: boostActive || null,
+      paidOrders: paidOrdersList.length > 0,
+      paidOrderTypes,
       warnings,
     },
     providers,
   };
+
   return sendJson(response, 200, result);
 }

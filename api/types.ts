@@ -1,21 +1,52 @@
 export type ProviderName = 'DexScreener' | 'Helius' | 'Birdeye' | 'Solscan';
 
-export type ProviderStatus = {
+export interface ProviderStatus {
   name: ProviderName;
   configured: boolean;
   available: boolean;
   message?: string;
-};
+}
 
-export type TokenHolder = {
+export interface TokenHolder {
   address: string;
   percentage: number | null;
   balance: string;
-  rank?: number;
-  label?: string;
-};
+  rank: number;
+}
 
-export type TokenAnalysis = {
+export interface EarlyBuyer {
+  address: string;
+  firstBuyTimestamp: number | null;
+  initialAmount: number | null;
+  initialAmountFormatted: string;
+  signature: string | null;
+  solscanUrl: string;
+  solscanTxUrl: string | null;
+}
+
+export interface TraderSummary {
+  address: string;
+  volume: number | null;
+  buyVolume: number | null;
+  sellVolume: number | null;
+  realizedPnl: number | null;
+  unrealizedPnl: number | null;
+  totalPnl: number | null;
+  avgBuyPrice: number | null;
+  avgSellPrice: number | null;
+  buyCount: number | null;
+  sellCount: number | null;
+  netTokenBalance: number | null;
+  netTokenBalanceFormatted: string;
+  solscanUrl: string;
+}
+
+export interface DexBoost {
+  active: number;
+  totalAmount: number | null;
+}
+
+export interface TokenAnalysis {
   address: string;
   token: {
     name: string;
@@ -44,18 +75,15 @@ export type TokenAnalysis = {
     top10Percentage: number | null;
     totalKnown: number | null;
   };
+  topTraders: TraderSummary[];
+  earlyBuyers: EarlyBuyer[];
   developer: {
     address: string | null;
     balancePercentage: number | null;
     source: string;
-    risk: 'low' | 'medium' | 'high' | 'unknown';
+    risk: 'high' | 'medium' | 'low' | 'unknown';
   };
-  earlyWallets: {
-    address: string;
-    amount: string;
-    status: 'Holding' | 'Partial' | 'Exited' | 'Unknown';
-    source: string;
-  }[];
+  dexBoosts: DexBoost | null;
   relationships: {
     wallets: string[];
     directCount: number;
@@ -64,12 +92,13 @@ export type TokenAnalysis = {
   monitoring: {
     boosts: number | null;
     paidOrders: boolean | null;
+    paidOrderTypes: string[];
     warnings: string[];
   };
   providers: ProviderStatus[];
-};
+}
 
-export type WalletHolding = {
+export interface WalletHolding {
   address: string;
   symbol: string;
   name: string;
@@ -77,17 +106,17 @@ export type WalletHolding = {
   balance: number | null;
   valueUsd: number | null;
   decimals: number | null;
-};
+}
 
-export type WalletActivity = {
+export interface WalletActivity {
   signature: string;
   type: string;
   description: string;
   timestamp: string | null;
   source: string;
-};
+}
 
-export type WalletAnalysis = {
+export interface WalletAnalysis {
   address: string;
   portfolio: {
     solBalance: number | null;
@@ -100,8 +129,17 @@ export type WalletAnalysis = {
   signals: {
     activeDays: number | null;
     topHoldingPercentage: number | null;
-    risk: 'low' | 'medium' | 'high' | 'unknown';
+    risk: 'high' | 'medium' | 'low' | 'unknown';
     notes: string[];
   };
   providers: ProviderStatus[];
-};
+}
+
+export interface OhlcvItem {
+  unixTime: number;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+}
