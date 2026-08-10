@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Wallet analysis — Dyorly</title>
-    <meta name="description" content="Dyorly wallet intelligence is coming soon.">
+    <meta name="description" content="Analyze any Solana wallet: portfolio, holdings, activity, and risk signals.">
     <meta name="theme-color" content="#0b0e13">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,9 +20,9 @@
           <span>dyorly<span class="accent">.</span></span>
         </a>
         <nav class="desktop-nav" aria-label="Primary navigation">
-          <a href="/#analyze">Analyze DEX</a>
+          <a href="/#analyze">Analyze token</a>
           <a class="active" href="/wallet.html">Analyze wallet</a>
-          <a href="/#providers">Providers</a>
+          <a href="/#coverage">Coverage</a>
         </nav>
         <div class="header-actions">
           <button class="button button-ghost watchlist-button" type="button" data-auth="signin">Watchlist</button>
@@ -33,33 +33,154 @@
         </div>
       </div>
       <nav class="mobile-nav" aria-label="Mobile navigation" data-mobile-nav>
-        <a href="/#analyze">Analyze DEX <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
+        <a href="/#analyze">Analyze token <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
         <a href="/wallet.html">Analyze wallet <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
-        <a href="/#providers">Provider status <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></a>
         <button type="button" data-auth="signup">Create account <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></button>
       </nav>
     </header>
 
-    <main class="wallet-coming container">
-      <div class="coming-orbit">
-        <span></span><span></span><span></span>
-        <div>
-          <img src="/dyorly-mark.png" alt="W" width="38" height="38" style="border-radius:12px;object-fit:cover;">
+    <main>
+      <!-- Live market prices strip -->
+      <div class="market-strip container" data-market-strip>
+        <span class="market-strip-label mono">Market</span>
+        <div class="market-strip-items" data-market-items>
+          <span class="market-item mono muted">Loading prices…</span>
         </div>
       </div>
-      <span class="eyebrow"><span class="status-dot"></span> Wallet intelligence</span>
-      <h1>Analyze every wallet.<br><span>Coming soon.</span></h1>
-      <p>We're building the wallet desk now — portfolio history, token flows, concentration, PnL, and the signals that matter before you follow a wallet.</p>
-      <div class="coming-actions">
-        <a class="button button-primary" href="/#analyze">
-          Analyze a token
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-        </a>
-        <button class="button button-ghost" type="button" data-auth="signup">
-          Get notified
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-        </button>
+
+      <section class="hero container wallet-hero">
+        <div class="hero-copy entrance">
+          <div class="eyebrow"><span class="status-dot"></span> Wallet intelligence</div>
+          <h1>Analyze every wallet.<br><span>Follow the smart money.</span></h1>
+          <p>Portfolio value, token holdings, recent activity, and concentration risk for any Solana wallet.</p>
+        </div>
+
+        <div class="scan-card glass entrance entrance-delay-1" id="analyze-wallet">
+          <div class="scan-card-top">
+            <span class="mono label">Analyze a wallet</span>
+            <span class="live-label"><span class="status-dot"></span> Live desk</span>
+          </div>
+          <form class="scan-form" data-wallet-form>
+            <label class="search-field">
+              <span class="search-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </span>
+              <input id="wallet-input" name="address" autocomplete="off" placeholder="Paste a Solana wallet address" aria-label="Wallet address">
+            </label>
+            <button class="button button-primary analyze-button" type="submit">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span data-analyze-label>Analyze</span>
+            </button>
+          </form>
+          <p class="scan-hint">Wallet holdings and portfolio value come from Helius and Birdeye. Activity history comes from Solscan.</p>
+        </div>
+      </section>
+
+      <div class="error-wrap container" data-error hidden>
+        <div class="error-message">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <p data-error-text></p>
+          <button type="button" data-dismiss-error aria-label="Dismiss error">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
       </div>
+
+      <div class="page-loading container" data-page-loading hidden>
+        <div class="spinner"></div>
+        <span>Reading the wallet…</span>
+      </div>
+
+      <section class="analysis-section" data-wallet-analysis hidden>
+        <div class="container analysis-container">
+
+          <div class="analysis-heading">
+            <div>
+              <div class="analysis-kicker">
+                <span>Wallet analysis</span>
+                <span class="mono">Helius + Birdeye + Solscan</span>
+              </div>
+              <div class="asset-heading">
+                <div class="token-avatar wallet-avatar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div>
+                  <h2 data-wallet-title>Wallet</h2>
+                  <p class="mono">
+                    <span data-wallet-address></span>
+                    <a data-wallet-solscan target="_blank" rel="noreferrer" aria-label="View on Solscan">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="analysis-actions">
+              <button class="button button-ghost" type="button" data-wallet-copy>
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copy address
+              </button>
+            </div>
+          </div>
+
+          <!-- 01 Portfolio -->
+          <section class="analysis-block">
+            <div class="section-heading">
+              <div><span class="mono section-number">01 / Portfolio</span><h3>Portfolio overview</h3></div>
+              <span class="mono section-meta">live snapshot</span>
+            </div>
+            <div class="metric-grid overview-grid">
+              <article class="metric-card large">
+                <span class="metric-label">Total portfolio value</span>
+                <strong data-wallet-total>—</strong>
+                <span class="metric-detail" data-wallet-token-count>—</span>
+              </article>
+              <article class="metric-card">
+                <span class="metric-label">SOL balance</span>
+                <strong data-wallet-sol>—</strong>
+                <span class="metric-detail" data-wallet-sol-usd>—</span>
+              </article>
+              <article class="metric-card">
+                <span class="metric-label">Concentration risk</span>
+                <strong data-wallet-risk>—</strong>
+                <span class="metric-detail" data-wallet-top-share>—</span>
+              </article>
+            </div>
+          </section>
+
+          <!-- 02 Holdings -->
+          <section class="analysis-block">
+            <div class="section-heading">
+              <div><span class="mono section-number">02 / Holdings</span><h3>Token holdings</h3></div>
+              <span class="mono section-meta" data-holdings-meta>by USD value</span>
+            </div>
+            <article class="metric-card holder-card" data-wallet-holdings></article>
+          </section>
+
+          <!-- 03 Activity -->
+          <section class="analysis-block">
+            <div class="section-heading">
+              <div><span class="mono section-number">03 / Activity</span><h3>Recent transactions</h3></div>
+              <span class="mono section-meta">Solscan history</span>
+            </div>
+            <article class="metric-card holder-card" data-wallet-activity></article>
+          </section>
+
+          <!-- 04 Signals -->
+          <section class="analysis-block monitoring-block">
+            <div class="section-heading">
+              <div><span class="mono section-number">04 / Signals</span><h3>Coverage &amp; notes</h3></div>
+            </div>
+            <div class="monitor-grid">
+              <article class="metric-card warnings-card" data-wallet-notes></article>
+              <article class="metric-card">
+                <span class="metric-label">Providers</span>
+                <div class="provider-pills" data-providers style="margin-top:10px;"></div>
+              </article>
+            </div>
+          </section>
+        </div>
+      </section>
     </main>
 
     <footer class="site-footer">
@@ -70,8 +191,8 @@
         </a>
         <span>Dyor but smarter.</span>
         <div>
-          <a href="/#providers">Provider status</a>
-          <span class="mono">wallet desk / next</span>
+          <a href="/#coverage">Coverage</a>
+          <span class="mono">wallet desk / live</span>
         </div>
       </div>
     </footer>

@@ -1,4 +1,4 @@
-import type { ProviderName, ProviderStatus, TokenAnalysis, TokenHolder, EarlyBuyer, TraderSummary, DexBoost } from './types';
+import type { ProviderName, ProviderStatus, TokenAnalysis, TokenHolder, EarlyBuyer, TraderSummary, DexBoost, WalletTokenPosition } from './types';
 import {
   asArray,
   fetchJson,
@@ -39,6 +39,7 @@ function normalizeHolder(row: JsonRecord, index: number, supply: number | null, 
     percentage: percentage !== null ? percentage : amount !== null && supply ? (amount / supply) * 100 : null,
     balance: amount !== null ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amount) : '—',
     rank: firstNumber(row.rank, row.position) ?? index + 1,
+    valueUsd: null,
   };
 }
 
@@ -152,6 +153,65 @@ async function birdeyeTopTraders(address: string, key: string) {
   );
 }
 
+function fmtAmount(v: number | null) {
+  return v !== null
+    ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, notation: 'compact' }).format(v)
+    : '—';
+}
+
+// Per-wallet current position in this token via Birdeye
+const positionCache = new Map<string, { at: number; value: WalletTokenPosition | null }>();
+const POSITION_TTL_MS = 5 * 60 * 1000;
+
+async function birdeyeWalletPosition(
+  wallet: string,
+  mint: string,
+  key: string,
+  priceUsd: number | null,
+): Promise<WalletTokenPosition | null> {
+  const cacheKey = `${wallet}:${mint}`;
+  const cached = positionCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < POSITION_TTL_MS) return cached.value;
+
+  let value: WalletTokenPosition | null = null;
+  try {
+    const body = await fetchJson<JsonRecord>(
+      `https://public-api.birdeye.so/v1/wallet/token_balance?wallet=${encodeURIComponent(wallet)}&token_address=${encodeURIComponent(mint)}`,
+      { headers: { 'X-API-KEY': key, 'x-chain': 'solana' } },
+      6000,
+    );
+    const data = (body.data ?? {}) as JsonRecord;
+    const balance = firstNumber(data.uiAmount, data.ui_amount, data.balance);
+    const usd = firstNumber(data.valueUsd, data.value_usd, data.value)
+      ?? (balance !== null && priceUsd !== null ? balance * priceUsd : null);
+    value = {
+      currentBalance: balance,
+      currentBalanceFormatted: fmtAmount(balance),
+      currentValueUsd: usd,
+      status: 'unknown',
+    };
+  } catch {
+    // Birdeye returns success:true, data:null when the wallet holds none — but a
+    // thrown error means we genuinely don't know. Distinguish below.
+    value = null;
+  }
+  positionCache.set(cacheKey, { at: Date.now(), value });
+  return value;
+}
+
+function positionStatus(position: WalletTokenPosition | null, initialAmount: number | null): WalletTokenPosition | null {
+  if (!position) return null;
+  const bal = position.currentBalance ?? 0;
+  let status: WalletTokenPosition['status'] = 'unknown';
+  if (bal <= 0) status = 'sold';
+  else if (initialAmount !== null && initialAmount > 0) {
+    if (bal >= initialAmount * 1.05) status = 'increased';
+    else if (bal <= initialAmount * 0.5) status = 'partial';
+    else status = 'holding';
+  } else status = 'holding';
+  return { ...position, status };
+}
+
 async function solscanHolders(address: string, key: string) {
   return fetchJson<JsonRecord>(`https://pro-api.solscan.io/v2.0/token/holders?address=${encodeURIComponent(address)}&page=1&page_size=20`, {
     headers: { token: key },
@@ -251,6 +311,23 @@ export default async function handler(request: ApiRequest, response: ApiResponse
 
   const birdeyeData = birdeyeResult.value?.data ?? {};
   const priceUsd = firstNumber(pair.priceUsd, birdeyeData.value, birdeyeData.price);
+
+  // Enrich holders + early buyers with each wallet's live position in this token
+  if (birdeyeKey) {
+    const wallets = [...new Set([...holders.map((h) => h.address), ...earlyBuyers.map((b) => b.address)])].slice(0, 20);
+    const positions = new Map<string, WalletTokenPosition | null>();
+    await Promise.all(wallets.map(async (w) => {
+      positions.set(w, await birdeyeWalletPosition(w, address, birdeyeKey, priceUsd));
+    }));
+    for (const holder of holders) {
+      const p = positions.get(holder.address) ?? null;
+      holder.position = positionStatus(p, null);
+      if (p?.currentValueUsd !== null && p?.currentValueUsd !== undefined) holder.valueUsd = p.currentValueUsd;
+    }
+    for (const buyer of earlyBuyers) {
+      buyer.position = positionStatus(positions.get(buyer.address) ?? null, buyer.initialAmount);
+    }
+  }
   const volume24h = firstNumber(pair.volume?.h24, birdeyeData.volume24h);
   const marketCap = firstNumber(pair.marketCap, birdeyeData.mc, birdeyeData.marketCap);
   const liquidityTotal = pairs.reduce((sum, item) => sum + (firstNumber(item.liquidity?.usd) ?? 0), 0) || null;
@@ -276,16 +353,27 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     ?? null;
   const developerHolder = authority ? holders.find((holder) => holder.address === authority) : undefined;
 
-  // DexScreener boosts — check pair.boosts field and also top boosts endpoint
-  const pairBoosts = pair.boosts as JsonRecord | undefined;
-  const boostActive = firstNumber(pairBoosts?.active) ?? 0;
-  const dexBoosts: DexBoost | null = boostActive > 0
-    ? { active: boostActive, totalAmount: firstNumber(pairBoosts?.amount, pairBoosts?.totalAmount) }
-    : null;
+  // DexScreener boosts — the boosts field can appear on any pair for the token,
+  // not just the deepest-liquidity pair, so take the maximum across all pairs.
+  const boostActive = pairs.reduce((max, item) => {
+    const active = firstNumber((item.boosts as JsonRecord | undefined)?.active) ?? 0;
+    return Math.max(max, active);
+  }, 0);
+  const boostAmount = pairs.reduce<number | null>((best, item) => {
+    const b = item.boosts as JsonRecord | undefined;
+    const amt = firstNumber(b?.amount, b?.totalAmount);
+    return amt !== null && amt > (best ?? 0) ? amt : best;
+  }, null);
+  const dexBoosts: DexBoost | null = boostActive > 0 ? { active: boostActive, totalAmount: boostAmount } : null;
 
-  const paidOrdersList = asArray(orderResult.value);
-  const paidOrderTypes = paidOrdersList
-    .map((o) => String(o.type ?? o.orderType ?? '')).filter(Boolean);
+  // DEX Paid — only count orders that were actually approved/processed
+  const allOrders = asArray(orderResult.value);
+  const paidOrdersList = allOrders.filter((o) => {
+    const status = String(o.status ?? '').toLowerCase();
+    return status === 'approved' || status === 'processing' || status === '';
+  });
+  const paidOrderTypes = [...new Set(paidOrdersList
+    .map((o) => String(o.type ?? o.orderType ?? '')).filter(Boolean))];
 
   const warnings = [
     !heliusKey ? 'Holder and developer signals are limited until HELIUS_API_KEY is configured.' : '',

@@ -7,11 +7,20 @@ export interface ProviderStatus {
   message?: string;
 }
 
+export interface WalletTokenPosition {
+  currentBalance: number | null;
+  currentBalanceFormatted: string;
+  currentValueUsd: number | null;
+  status: 'holding' | 'sold' | 'partial' | 'increased' | 'unknown';
+}
+
 export interface TokenHolder {
   address: string;
   percentage: number | null;
   balance: string;
   rank: number;
+  valueUsd: number | null;
+  position?: WalletTokenPosition | null;
 }
 
 export interface EarlyBuyer {
@@ -22,6 +31,7 @@ export interface EarlyBuyer {
   signature: string | null;
   solscanUrl: string;
   solscanTxUrl: string | null;
+  position?: WalletTokenPosition | null;
 }
 
 export interface TraderSummary {

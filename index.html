@@ -11,9 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
-    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   </head>
-  <body>
+  <body class="home-page">
     <header class="site-header">
       <div class="container header-inner">
         <a class="brand" href="/">
@@ -21,9 +20,9 @@
           <span>dyorly<span class="accent">.</span></span>
         </a>
         <nav class="desktop-nav" aria-label="Primary navigation">
-          <a href="#analyze">Analyze DEX</a>
+          <a href="#analyze">Analyze token</a>
           <a href="/wallet.html">Analyze wallet</a>
-          <a href="#providers">Providers</a>
+          <a href="#coverage">Coverage</a>
         </nav>
         <div class="header-actions">
           <button class="button button-ghost watchlist-button" type="button" data-auth="signin">Watchlist</button>
@@ -34,14 +33,22 @@
         </div>
       </div>
       <nav class="mobile-nav" aria-label="Mobile navigation" data-mobile-nav>
-        <a href="#analyze">Analyze DEX <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
+        <a href="#analyze">Analyze token <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
         <a href="/wallet.html">Analyze wallet <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
-        <a href="#providers">Provider status <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></a>
+        <a href="#coverage">Coverage <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></a>
         <button type="button" data-auth="signup">Create account <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></button>
       </nav>
     </header>
 
     <main>
+      <!-- Live market prices strip -->
+      <div class="market-strip container" data-market-strip>
+        <span class="market-strip-label mono">Market</span>
+        <div class="market-strip-items" data-market-items>
+          <span class="market-item mono muted">Loading prices…</span>
+        </div>
+      </div>
+
       <section class="hero container">
         <div class="hero-copy entrance">
           <div class="eyebrow"><span class="status-dot"></span> Solana onchain intelligence</div>
@@ -76,7 +83,13 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
             </a>
           </div>
-          <p class="scan-hint">Market data is public through DexScreener. Optional provider keys unlock holder and developer enrichment.</p>
+          <p class="scan-hint">Your analysis opens on its own page — price, chart, holders, first buyers, and risk signals in one read.</p>
+
+          <!-- Recent scans (filled by JS from local history) -->
+          <div class="recent-scans" data-recent-scans hidden>
+            <span class="mono label">Recent scans</span>
+            <div class="recent-scan-list" data-recent-scan-list></div>
+          </div>
         </div>
       </section>
 
@@ -86,290 +99,47 @@
         <div><span class="trust-number">03</span><span>Know what is actually covered</span></div>
       </section>
 
-      <div class="error-wrap container" data-error hidden>
-        <div class="error-message">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <p data-error-text></p>
-          <button type="button" data-dismiss-error aria-label="Dismiss error">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+      <!-- ── What the desk reads ── -->
+      <section class="container feature-section">
+        <div class="section-heading">
+          <div><span class="mono section-number">Full coverage</span><h2>Everything one scan gives you.</h2></div>
         </div>
-      </div>
-
-      <section class="analysis-section" data-analysis hidden>
-        <div class="container analysis-container">
-
-          <!-- ── Analysis heading with refresh ── -->
-          <div class="analysis-heading">
-            <div>
-              <div class="analysis-kicker">
-                <span>Live analysis</span>
-                <span class="mono">DexScreener + optional providers</span>
-              </div>
-              <div class="asset-heading">
-                <div class="token-avatar" data-token-avatar></div>
-                <div>
-                  <h2 data-token-name>Token</h2>
-                  <p class="mono">
-                    <span data-token-address></span>
-                    <a data-token-solscan target="_blank" rel="noreferrer" aria-label="View on Solscan">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-                    </a>
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div class="analysis-actions">
-              <button class="button button-ghost" type="button" data-copy>
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                Copy address
-              </button>
-              <button class="button button-ghost refresh-button" type="button" data-refresh aria-label="Refresh analysis">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-                <span data-refresh-label>Refresh</span>
-              </button>
-              <a class="icon-button" data-pair-link target="_blank" rel="noreferrer" aria-label="Open on DexScreener">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-              </a>
-            </div>
-          </div>
-
-          <!-- ── 01 Market overview ── -->
-          <section class="analysis-block">
-            <div class="section-heading">
-              <div><span class="mono section-number">01 / Market read</span><h3>Token overview</h3></div>
-              <span class="mono section-meta">Solana mainnet</span>
-            </div>
-            <div class="metric-grid overview-grid">
-              <article class="metric-card large">
-                <div class="metric-top">
-                  <div>
-                    <span class="metric-label">Price</span>
-                    <strong data-price>—</strong>
-                    <span class="metric-change" data-price-change>—</span>
-                  </div>
-                  <span class="metric-glyph">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-                  </span>
-                </div>
-                <div class="signal-bars" data-price-bars></div>
-                <div class="metric-foot"><span>market signal</span><span data-pair-date>—</span></div>
-              </article>
-              <article class="metric-card">
-                <span class="metric-label">Market cap</span>
-                <strong data-market-cap>—</strong>
-                <span class="metric-detail" data-fdv>—</span>
-                <div class="progress blue"><i></i></div>
-                <span class="metric-foot">Live DexScreener estimate</span>
-              </article>
-              <article class="metric-card">
-                <span class="metric-label">24h volume</span>
-                <strong data-volume>—</strong>
-                <span class="metric-detail" data-swaps>—</span>
-                <div class="signal-bars short" data-volume-bars></div>
-              </article>
-            </div>
-          </section>
-
-          <!-- ── 02 Price chart ── -->
-          <section class="analysis-block chart-block" data-chart-section>
-            <div class="section-heading">
-              <div><span class="mono section-number">02 / Price chart</span><h3>OHLCV chart</h3></div>
-              <div class="chart-controls">
-                <div class="chart-tabs" data-chart-tabs>
-                  <button class="chart-tab active" data-type="15m">15m</button>
-                  <button class="chart-tab" data-type="1H">1H</button>
-                  <button class="chart-tab" data-type="4H">4H</button>
-                  <button class="chart-tab" data-type="1D">1D</button>
-                </div>
-                <a class="button button-ghost button-sm birdeye-chart-link" data-birdeye-chart target="_blank" rel="noreferrer" hidden>
-                  View live on Birdeye
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-                </a>
-              </div>
-            </div>
-            <div class="chart-container" data-chart-container>
-              <div class="chart-loading" data-chart-loading>
-                <div class="spinner"></div>
-                <span>Loading chart data…</span>
-              </div>
-            </div>
-          </section>
-
-          <!-- ── 03 Liquidity & flow ── -->
-          <div class="analysis-columns">
-            <section class="analysis-block">
-              <div class="section-heading">
-                <div><span class="mono section-number">03 / Market structure</span><h3>Liquidity &amp; DEX</h3></div>
-                <span class="mono section-meta" data-pair-count>— venues</span>
-              </div>
-              <div class="split-cards">
-                <article class="metric-card">
-                  <span class="metric-label">Total liquidity</span>
-                  <strong data-liquidity>—</strong>
-                  <span class="metric-detail">Across indexed Solana pairs</span>
-                  <div class="venue-list" data-venues></div>
-                </article>
-                <article class="metric-card">
-                  <span class="metric-label">Market health</span>
-                  <strong class="health" data-health>—</strong>
-                  <span class="metric-detail" data-health-detail>DEX read</span>
-                  <div class="mini-stat"><span>LP depth</span><b data-lp-depth>—</b></div>
-                  <div class="mini-stat"><span>LP locked</span><b data-lp-locked>—</b></div>
-                </article>
-              </div>
-            </section>
-            <section class="analysis-block">
-              <div class="section-heading">
-                <div><span class="mono section-number">04 / Flow</span><h3>Trading activity</h3></div>
-                <span class="mono section-meta">last 24 hours</span>
-              </div>
-              <article class="metric-card flow-card">
-                <div class="flow-grid">
-                  <div><span class="metric-label">Buys</span><strong data-buys>—</strong></div>
-                  <div><span class="metric-label">Sells</span><strong data-sells>—</strong></div>
-                  <div><span class="metric-label">Buy / sell</span><strong data-ratio>—</strong></div>
-                  <div><span class="metric-label">Traders</span><strong>—</strong></div>
-                </div>
-                <div class="flow-bar"><i data-buy-bar></i></div>
-                <div class="flow-caption">
-                  <span data-buy-caption>Buy data unavailable</span>
-                  <span data-sell-caption>Sell data unavailable</span>
-                </div>
-              </article>
-            </section>
-          </div>
-
-          <!-- ── 05 DEX intelligence (boosts / paid) ── -->
-          <section class="analysis-block dex-intel-block">
-            <div class="section-heading">
-              <div><span class="mono section-number">05 / DEX intelligence</span><h3>Boosts &amp; paid promotion</h3></div>
-              <span class="mono section-meta" data-dex-intel-meta>DexScreener</span>
-            </div>
-            <div class="dex-intel-grid" data-dex-intel></div>
-          </section>
-
-          <!-- ── 06 Developer ── -->
-          <div class="analysis-columns">
-            <section class="analysis-block">
-              <div class="section-heading">
-                <div><span class="mono section-number">06 / People behind it</span><h3>Developer intelligence</h3></div>
-              </div>
-              <article class="metric-card developer-card">
-                <div class="developer-top">
-                  <div class="avatar-placeholder">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                  </div>
-                  <div>
-                    <b>Asset authority</b>
-                    <span class="mono" data-developer-address>Not returned by provider</span>
-                  </div>
-                  <em data-developer-risk>UNKNOWN RISK</em>
-                </div>
-                <div class="developer-grid">
-                  <div><span class="metric-label">Authority share</span><strong data-authority-share>—</strong></div>
-                  <div><span class="metric-label">Launch history</span><strong>—</strong><small>Needs transaction history</small></div>
-                  <div><span class="metric-label">Source</span><strong data-developer-source>—</strong></div>
-                  <div><span class="metric-label">Sell pressure</span><strong>—</strong><small>Needs transaction history</small></div>
-                </div>
-                <p class="callout">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  Developer history is reported only when provider transaction data can verify it.
-                </p>
-              </article>
-            </section>
-
-            <!-- ── 07 Holder concentration ── -->
-            <section class="analysis-block">
-              <div class="section-heading">
-                <div><span class="mono section-number">07 / Concentration</span><h3>Top holders</h3></div>
-                <span class="mono section-meta" data-top-ten>not calculated</span>
-              </div>
-              <article class="metric-card concentration-card" data-holder-bars></article>
-            </section>
-          </div>
-
-          <!-- ── 08 Top holders full table ── -->
-          <section class="analysis-block">
-            <div class="section-heading">
-              <div><span class="mono section-number">08 / Early conviction</span><h3>Largest indexed holders</h3></div>
-              <span class="mono section-meta" data-holder-total>provider snapshot</span>
-            </div>
-            <article class="metric-card holder-card" data-holders></article>
-          </section>
-
-          <!-- ── 09 Top traders PnL ── -->
-          <section class="analysis-block" data-traders-section>
-            <div class="section-heading">
-              <div><span class="mono section-number">09 / Trader PnL</span><h3>Top traders this week</h3></div>
-              <span class="mono section-meta">Birdeye · 7-day window</span>
-            </div>
-            <article class="metric-card trader-table-card" data-traders></article>
-          </section>
-
-          <!-- ── 10 First 10 buyers ── -->
-          <section class="analysis-block" data-early-section>
-            <div class="section-heading">
-              <div><span class="mono section-number">10 / First movers</span><h3>First 10 buyers</h3></div>
-              <span class="mono section-meta">Helius on-chain</span>
-            </div>
-            <article class="metric-card early-buyers-card" data-early-buyers></article>
-          </section>
-
-          <!-- ── 11 Bubble map ── -->
-          <section class="analysis-block bubble-section" data-bubble-section>
-            <div class="section-heading">
-              <div><span class="mono section-number">11 / Wallet graph</span><h3>Bubble map</h3></div>
-              <div class="bubble-actions">
-                <a class="button button-ghost button-sm" data-bubblemaps-link target="_blank" rel="noreferrer">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                  Bubblemaps
-                </a>
-                <a class="button button-ghost button-sm" data-birdeye-bubble target="_blank" rel="noreferrer">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-                  Birdeye holders
-                </a>
-              </div>
-            </div>
-            <div class="bubble-embed-wrap" data-bubble-embed>
-              <iframe class="bubble-iframe" data-bubble-iframe src="" title="Bubble map" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups" scrolling="no"></iframe>
-            </div>
-          </section>
-
-          <!-- ── 12 Monitoring ── -->
-          <section class="analysis-block monitoring-block">
-            <div class="section-heading">
-              <div><span class="mono section-number">12 / Monitoring</span><h3>Signals to keep watching</h3></div>
-              <span class="mono section-meta" data-monitoring-coverage>limited coverage</span>
-            </div>
-            <div class="monitor-grid">
-              <article class="metric-card">
-                <span class="metric-label">DexScreener promotion</span>
-                <strong data-paid-orders>—</strong>
-                <span class="metric-detail">A promotion is not a safety signal.</span>
-                <div class="paid-order-types" data-paid-order-types></div>
-              </article>
-              <article class="metric-card">
-                <span class="metric-label">Active boosts</span>
-                <strong data-boosts>—</strong>
-                <span class="metric-detail">Public market metadata.</span>
-              </article>
-              <article class="metric-card warnings-card" data-warnings></article>
-            </div>
-          </section>
-
-          <!-- ── Provider footer ── -->
-          <section class="provider-footer" id="providers">
-            <div>
-              <span class="mono section-number">Signals, not guesses</span>
-              <p>Every card is labeled by source. Missing keys create partial coverage, never fake values.</p>
-            </div>
-            <div class="provider-pills" data-providers></div>
-          </section>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+            <h3>Live price &amp; chart</h3>
+            <p>USD price, market cap, 24h volume, and a real OHLCV candlestick chart on 15m to 1D intervals.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+            <h3>Liquidity &amp; venues</h3>
+            <p>Total liquidity across every indexed Solana pair, split by DEX venue, with LP lock status when reported.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+            <h3>Holders &amp; wallets</h3>
+            <p>Top holders with live wallet balances, holding status, and a bubble view of supply concentration.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <h3>First 10 buyers</h3>
+            <p>The earliest wallets in, what they bought, and whether they are still holding, trimming, or fully out.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+            <h3>DEX paid &amp; boosts</h3>
+            <p>Whether the team paid for a DexScreener profile and how many boosts are active right now.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <h3>Risk warnings</h3>
+            <p>Low liquidity, heavy concentration, and developer authority flags — labeled by source, never invented.</p>
+          </article>
         </div>
       </section>
 
-      <section class="container why-section">
+      <!-- ── How it works ── -->
+      <section class="container why-section" id="coverage">
         <div class="section-heading">
           <div><span class="mono section-number">The desk</span><h2>Research the asset, not the hype.</h2></div>
         </div>
@@ -387,8 +157,21 @@
           <article class="why-card">
             <span>03</span>
             <h3>Built for a faster first look</h3>
-            <p>Use this as the first pass before deeper research. Jump from the market read to DexScreener or Solscan when you need the source context.</p>
+            <p>Use this as the first pass before deeper research. Jump from the market read to DexScreener, Birdeye, or Solscan when you need source context.</p>
           </article>
+        </div>
+      </section>
+
+      <!-- ── Data sources ── -->
+      <section class="container source-section">
+        <div class="section-heading">
+          <div><span class="mono section-number">Signals, not guesses</span><h2>Powered by the sources analysts trust.</h2></div>
+        </div>
+        <div class="source-grid">
+          <article class="source-card"><b>DexScreener</b><span>Markets, pairs, boosts, paid profiles</span></article>
+          <article class="source-card"><b>Birdeye</b><span>Prices, OHLCV, holders, trader PnL, wallet balances</span></article>
+          <article class="source-card"><b>Helius</b><span>On-chain transactions, first buyers, asset authority</span></article>
+          <article class="source-card"><b>Solscan</b><span>Holder verification and transaction history</span></article>
         </div>
       </section>
     </main>
@@ -401,9 +184,9 @@
         </a>
         <span>Dyor but smarter.</span>
         <div>
-          <a href="#providers">Provider status</a>
+          <a href="#coverage">Coverage</a>
           <a href="https://x.com" target="_blank" rel="noreferrer">X / Twitter</a>
-          <span class="mono">v1.0 live desk</span>
+          <span class="mono">v1.1 live desk</span>
         </div>
       </div>
     </footer>
@@ -424,7 +207,7 @@
           <label data-name-field hidden><span>Name</span><input type="text" placeholder="Your name"></label>
           <label><span>Email</span><input type="email" placeholder="you@example.com" required></label>
           <label><span>Password</span><input type="password" placeholder="••••••••" required></label>
-          <button class="button button-primary full" type="submit" data-auth-submit>Sign in <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></button>
+          <button class="button button-primary full" type="submit" data-auth-submit>Sign in</button>
         </form>
         <p class="auth-switch"><span data-auth-switch-copy>New to Dyorly?</span> <button type="button" data-auth-switch>Register</button></p>
         <div class="auth-note" data-auth-note hidden>Account access will be connected in the next release.</div>

@@ -3,6 +3,7 @@
 // ─── Constants ───────────────────────────────────────────────────────────────
 const SAMPLE_TOKEN = 'So11111111111111111111111111111111111111112';
 const REFRESH_COOLDOWN_MS = 15000;
+const RECENT_SCANS_KEY = 'dyorly.recentScans';
 
 // ─── DOM helpers ─────────────────────────────────────────────────────────────
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -19,7 +20,29 @@ const IC = {
   shield:  `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
   user:    `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
   clock:   `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  // Brand icons for social links
+  globe:   `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>`,
+  twitter: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+  telegram:`<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`,
+  discord: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.79 19.79 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z"/></svg>`,
+  sol:     `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h13l3-3H7zM4 17h13l3 3H7zM7 12h13l-3-3H4z"/></svg>`,
 };
+
+function socialIcon(type) {
+  const t = String(type || '').toLowerCase();
+  if (t.includes('twitter') || t === 'x') return IC.twitter;
+  if (t.includes('telegram')) return IC.telegram;
+  if (t.includes('discord')) return IC.discord;
+  return IC.globe;
+}
+
+function socialLabel(type) {
+  const t = String(type || '').toLowerCase();
+  if (t.includes('twitter') || t === 'x') return 'X / Twitter';
+  if (t.includes('telegram')) return 'Telegram';
+  if (t.includes('discord')) return 'Discord';
+  return type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Link';
+}
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 function escHtml(v) {
@@ -124,18 +147,63 @@ function hideError() {
 function setLoading(loading) {
   const btn = $('.analyze-button');
   const lbl = $('[data-analyze-label]');
-  if (!btn || !lbl) return;
-  btn.disabled = loading;
-  lbl.textContent = loading ? 'Reading…' : 'Analyze';
+  if (btn) btn.disabled = loading;
+  if (lbl) lbl.textContent = loading ? 'Reading…' : 'Analyze';
+  const pageLoading = $('[data-page-loading]');
+  if (pageLoading) pageLoading.hidden = !loading;
 }
 
-// ─── Bar renderers ────────────────────────────────────────────────────────────
-function renderBars(sel, values, color = 'blue') {
-  const el = $(sel);
+// ─── Market prices strip (CoinGecko public, no key needed) ──────────────────
+async function loadMarketStrip() {
+  const el = $('[data-market-items]');
   if (!el) return;
-  el.innerHTML = values.map((h, i) =>
-    `<i class="${i > values.length - 4 ? 'highlight' : ''} ${color}" style="height:${h}%"></i>`
-  ).join('');
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true', { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error('prices unavailable');
+    const body = await res.json();
+    const rows = [
+      { label: 'SOL', data: body.solana },
+      { label: 'BTC', data: body.bitcoin },
+      { label: 'ETH', data: body.ethereum },
+    ].filter((r) => r.data && Number.isFinite(r.data.usd));
+    if (!rows.length) throw new Error('prices unavailable');
+    el.innerHTML = rows.map((r) => {
+      const change = r.data.usd_24h_change;
+      const cls = Number(change) >= 0 ? 'lime' : 'red';
+      return `<span class="market-item mono"><b>${escHtml(r.label)}</b> ${money(r.data.usd, false).replace(/\.\d+$/, (m) => m.slice(0, 3))} <i class="${cls}">${escHtml(pct(change))}</i></span>`;
+    }).join('');
+  } catch {
+    el.innerHTML = '<span class="market-item mono muted">Live prices unavailable right now.</span>';
+  }
+}
+
+// ─── Recent scans (localStorage) ─────────────────────────────────────────────
+function getRecentScans() {
+  try { return JSON.parse(localStorage.getItem(RECENT_SCANS_KEY) || '[]'); } catch { return []; }
+}
+
+function saveRecentScan(entry) {
+  try {
+    const scans = getRecentScans().filter((s) => s.address !== entry.address);
+    scans.unshift(entry);
+    localStorage.setItem(RECENT_SCANS_KEY, JSON.stringify(scans.slice(0, 6)));
+  } catch { /* storage unavailable */ }
+}
+
+function renderRecentScans() {
+  const wrap = $('[data-recent-scans]');
+  const list = $('[data-recent-scan-list]');
+  if (!wrap || !list) return;
+  const scans = getRecentScans();
+  if (!scans.length) return;
+  wrap.hidden = false;
+  list.innerHTML = scans.map((s) => `
+    <a class="recent-scan-chip" href="/token.html?address=${encodeURIComponent(s.address)}">
+      <b>${escHtml(s.symbol || '?')}</b>
+      <span class="mono">${escHtml(shortAddr(s.address))}</span>
+      ${IC.ext}
+    </a>
+  `).join('');
 }
 
 // ─── Provider pills ───────────────────────────────────────────────────────────
@@ -148,7 +216,15 @@ function renderProviders(providers = []) {
   }).join('');
 }
 
-// ─── Venue list ───────────────────────────────────────────────────────────────
+// ─── Bars / venues ───────────────────────────────────────────────────────────
+function renderBars(sel, values, color = 'blue') {
+  const el = $(sel);
+  if (!el) return;
+  el.innerHTML = values.map((h, i) =>
+    `<i class="${i > values.length - 4 ? 'highlight' : ''} ${color}" style="height:${h}%"></i>`
+  ).join('');
+}
+
 function renderVenues(venues = [], total = 0) {
   const el = $('[data-venues]');
   if (!el) return;
@@ -156,6 +232,20 @@ function renderVenues(venues = [], total = 0) {
     const w = total > 0 ? Math.max(3, Math.min(100, (v.liquidityUsd / total) * 100)) : 3;
     return `<div class="venue-row"><div><span>${escHtml(v.name)}</span><b>${money(v.liquidityUsd)}</b></div><div class="venue-track"><i style="width:${w}%"></i></div></div>`;
   }).join('') : '<p class="muted-copy">Liquidity detail unavailable.</p>';
+}
+
+// ─── Position badge (wallet status for holders / buyers) ────────────────────
+function positionBadge(position) {
+  if (!position) return '<span class="pos-badge unknown">No data</span>';
+  const map = {
+    holding: ['holding', 'Holding'],
+    increased: ['holding', 'Added more'],
+    partial: ['partial', 'Trimmed'],
+    sold: ['sold', 'Sold out'],
+    unknown: ['unknown', 'Unknown'],
+  };
+  const [cls, label] = map[position.status] || map.unknown;
+  return `<span class="pos-badge ${cls}">${label}</span>`;
 }
 
 // ─── Top holders (concentration bars) ────────────────────────────────────────
@@ -172,12 +262,12 @@ function renderHolderBars(holders = []) {
         <b class="${cls}">${escHtml(pct(h.percentage))}</b>
       </div>
       <div class="bar-track"><i class="${cls}" style="width:${w}%"></i></div>
-      <small>${escHtml(h.balance)}</small>
+      <small>${escHtml(h.balance)}${h.valueUsd !== null && h.valueUsd !== undefined ? ` · ${money(h.valueUsd)}` : ''}</small>
     </div>`;
   }).join('') : empty;
 }
 
-// ─── Holders table ────────────────────────────────────────────────────────────
+// ─── Holders table (with live wallet value + status) ─────────────────────────
 function renderHoldersTable(holders = []) {
   const el = $('[data-holders]');
   if (!el) return;
@@ -186,18 +276,21 @@ function renderHoldersTable(holders = []) {
     return;
   }
   el.innerHTML = `
-    <div class="holder-table-head">
-      <span>#</span><span>Wallet</span><span>Balance</span><span>Share</span><span></span>
+    <div class="holder-table-head wide">
+      <span>#</span><span>Wallet</span><span>Balance</span><span>Share</span><span>Value (USD)</span><span>Status</span><span></span>
     </div>
     ${holders.slice(0, 10).map((h, i) => `
-      <div class="holder-row">
+      <div class="holder-row wide">
         <span class="rank">${String(h.rank || i + 1).padStart(2, '0')}</span>
         <span class="mono address">${escHtml(shortAddr(h.address))}</span>
         <span class="mono balance">${escHtml(h.balance)}</span>
         <b>${escHtml(pct(h.percentage))}</b>
+        <span class="mono">${escHtml(money(h.valueUsd))}</span>
+        ${positionBadge(h.position)}
         <span class="row-actions">
           <button class="icon-action" data-copy-addr="${escHtml(h.address)}" title="Copy wallet address">${IC.copy}</button>
           <a class="icon-action" href="https://solscan.io/account/${escHtml(h.address)}" target="_blank" rel="noreferrer" title="View on Solscan">${IC.ext}</a>
+          <a class="icon-action" href="/wallet.html?address=${escHtml(h.address)}" title="Analyze this wallet">${IC.user}</a>
         </span>
       </div>
     `).join('')}
@@ -238,6 +331,7 @@ function renderTraders(traders = []) {
         <span class="row-actions">
           <button class="icon-action" data-copy-addr="${escHtml(t.address)}" title="Copy wallet">${IC.copy}</button>
           <a class="icon-action" href="${escHtml(t.solscanUrl)}" target="_blank" rel="noreferrer" title="Solscan">${IC.ext}</a>
+          <a class="icon-action" href="/wallet.html?address=${escHtml(t.address)}" title="Analyze this wallet">${IC.user}</a>
         </span>
       </div>`;
     }).join('')}
@@ -245,7 +339,7 @@ function renderTraders(traders = []) {
   bindCopyButtons(el);
 }
 
-// ─── Early buyers table ───────────────────────────────────────────────────────
+// ─── Early buyers table (with live wallet position) ──────────────────────────
 function renderEarlyBuyers(buyers = []) {
   const section = $('[data-early-section]');
   const el = $('[data-early-buyers]');
@@ -256,15 +350,18 @@ function renderEarlyBuyers(buyers = []) {
   }
   if (section) section.hidden = false;
   el.innerHTML = `
-    <div class="early-table-head">
+    <div class="early-table-head wide">
       <span>#</span>
       <span>Wallet</span>
       <span>First bought</span>
       <span>Initial amount</span>
+      <span>Holds now</span>
+      <span>Value (USD)</span>
+      <span>Status</span>
       <span></span>
     </div>
     ${buyers.map((b, i) => `
-      <div class="early-row">
+      <div class="early-row wide">
         <span class="rank">${String(i + 1).padStart(2, '0')}</span>
         <span class="mono address">${escHtml(shortAddr(b.address))}</span>
         <span class="mono time-cell">
@@ -272,15 +369,36 @@ function renderEarlyBuyers(buyers = []) {
           ${escHtml(b.firstBuyTimestamp ? relativeTime(b.firstBuyTimestamp) : '—')}
         </span>
         <span class="mono">${escHtml(b.initialAmountFormatted || '—')}</span>
+        <span class="mono">${escHtml(b.position ? b.position.currentBalanceFormatted : '—')}</span>
+        <span class="mono">${escHtml(b.position ? money(b.position.currentValueUsd) : '—')}</span>
+        ${positionBadge(b.position)}
         <span class="row-actions">
           <button class="icon-action" data-copy-addr="${escHtml(b.address)}" title="Copy wallet">${IC.copy}</button>
           <a class="icon-action" href="${escHtml(b.solscanUrl)}" target="_blank" rel="noreferrer" title="Solscan wallet">${IC.ext}</a>
-          ${b.solscanTxUrl ? `<a class="icon-action" href="${escHtml(b.solscanTxUrl)}" target="_blank" rel="noreferrer" title="View transaction">${IC.clock}</a>` : ''}
+          <a class="icon-action" href="/wallet.html?address=${escHtml(b.address)}" title="Analyze this wallet">${IC.user}</a>
         </span>
       </div>
     `).join('')}
   `;
   bindCopyButtons(el);
+}
+
+// ─── Social links with brand logos ───────────────────────────────────────────
+function renderSocials(token) {
+  const el = $('[data-token-socials]');
+  if (!el) return;
+  const links = [
+    ...(token.websites || []).map((u) => ({ type: 'website', url: u })),
+    ...(token.socials || []),
+  ].filter((l) => l.url && safeUrl(l.url) !== '#');
+  el.innerHTML = links.length
+    ? links.slice(0, 6).map((l) => `
+        <a class="social-chip" href="${escHtml(safeUrl(l.url))}" target="_blank" rel="noreferrer">
+          ${socialIcon(l.type)}
+          <span>${escHtml(socialLabel(l.type))}</span>
+        </a>
+      `).join('')
+    : '<span class="social-chip muted">No official links published</span>';
 }
 
 // ─── DEX intelligence block ───────────────────────────────────────────────────
@@ -298,10 +416,10 @@ function renderDexIntel(data) {
       <div class="dex-intel-icon ${hasPaid ? 'lime-bg' : ''}">${IC.paid}</div>
       <div>
         <span class="metric-label">DEX Paid</span>
-        <strong>${hasPaid ? 'Active order' : 'No order found'}</strong>
-        ${orderTypes.length ? `<span class="metric-detail">${escHtml(orderTypes.join(', '))}</span>` : ''}
+        <strong>${hasPaid ? 'Paid profile' : 'No paid order found'}</strong>
+        ${orderTypes.length ? `<span class="metric-detail">${escHtml(orderTypes.join(', '))}</span>` : '<span class="metric-detail">Checked against DexScreener orders</span>'}
       </div>
-      ${hasPaid ? `<span class="dex-badge lime-badge">LIVE</span>` : ''}
+      ${hasPaid ? `<span class="dex-badge lime-badge">PAID</span>` : ''}
     </article>
 
     <article class="dex-intel-card ${hasBoost ? 'boost-active' : ''}">
@@ -309,7 +427,7 @@ function renderDexIntel(data) {
       <div>
         <span class="metric-label">Active boosts</span>
         <strong>${hasBoost ? `${dexBoosts.active} active` : 'No boosts'}</strong>
-        ${hasBoost && dexBoosts.totalAmount ? `<span class="metric-detail">${money(dexBoosts.totalAmount)} total spend</span>` : ''}
+        ${hasBoost && dexBoosts.totalAmount ? `<span class="metric-detail">${money(dexBoosts.totalAmount)} total spend</span>` : '<span class="metric-detail">Checked across every indexed pair</span>'}
       </div>
       ${hasBoost ? `<span class="dex-badge orange-badge">BOOSTED</span>` : ''}
     </article>
@@ -317,13 +435,12 @@ function renderDexIntel(data) {
     <article class="dex-intel-card">
       <div class="dex-intel-icon">${IC.shield}</div>
       <div>
-        <span class="metric-label">DexScreener profile</span>
-        <strong>${token.websites?.length ? 'Has website' : 'No profile link'}</strong>
-        ${token.socials?.length ? `<span class="metric-detail">${token.socials.length} social link${token.socials.length !== 1 ? 's' : ''}</span>` : '<span class="metric-detail">No socials linked</span>'}
-      </div>
-      <div class="social-links" style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
-        ${(token.websites || []).slice(0, 1).map(u => `<a class="icon-action" href="${escHtml(safeUrl(u))}" target="_blank" rel="noreferrer" title="Website">${IC.ext}</a>`).join('')}
-        ${(token.socials || []).slice(0, 3).map(s => `<a class="icon-action" href="${escHtml(safeUrl(s.url))}" target="_blank" rel="noreferrer" title="${escHtml(s.type)}">${IC.ext}</a>`).join('')}
+        <span class="metric-label">Official links</span>
+        <strong>${(token.websites?.length || token.socials?.length) ? 'Profile published' : 'No links found'}</strong>
+        <div class="social-links-inline">
+          ${(token.websites || []).slice(0, 2).map((u) => `<a class="social-chip small" href="${escHtml(safeUrl(u))}" target="_blank" rel="noreferrer">${IC.globe}<span>Website</span></a>`).join('')}
+          ${(token.socials || []).slice(0, 4).map((s) => `<a class="social-chip small" href="${escHtml(safeUrl(s.url))}" target="_blank" rel="noreferrer">${socialIcon(s.type)}<span>${escHtml(socialLabel(s.type))}</span></a>`).join('')}
+        </div>
       </div>
     </article>
   `;
@@ -340,24 +457,20 @@ function renderWarnings(warnings = []) {
 
 // ─── Chart ────────────────────────────────────────────────────────────────────
 let _chart = null;
-let _candleSeries = null;
-let _volSeries = null;
-let _currentAddress = null;
 let _currentChartType = '15m';
 
 function destroyChart() {
-  if (_chart) { try { _chart.remove(); } catch (_) {} _chart = null; _candleSeries = null; _volSeries = null; }
+  if (_chart) { try { _chart.remove(); } catch (_) {} _chart = null; }
 }
 
 async function loadChart(address, type = '15m') {
   const container = $('[data-chart-container]');
   const loading = $('[data-chart-loading]');
-  if (!container) return;
+  if (!container || typeof LightweightCharts === 'undefined') return;
 
   if (loading) loading.hidden = false;
   _currentChartType = type;
 
-  // Update tab state
   $$('[data-chart-tabs] .chart-tab').forEach((tab) => {
     tab.classList.toggle('active', tab.dataset.type === type);
   });
@@ -367,11 +480,11 @@ async function loadChart(address, type = '15m') {
     if (!res.ok) throw new Error(`Chart unavailable (${res.status})`);
     const body = await res.json();
     const items = body.items ?? [];
-
     if (!items.length) throw new Error('No chart data returned for this interval.');
 
-    // Build/rebuild chart
     destroyChart();
+    const prevErr = container.querySelector('.chart-error');
+    if (prevErr) prevErr.remove();
 
     const chart = LightweightCharts.createChart(container, {
       width: container.clientWidth,
@@ -386,15 +499,11 @@ async function loadChart(address, type = '15m') {
     });
 
     const candleSeries = chart.addCandlestickSeries({
-      upColor: '#c1f56e',
-      downColor: '#ff7777',
-      borderUpColor: '#c1f56e',
-      borderDownColor: '#ff7777',
-      wickUpColor: '#c1f56e',
-      wickDownColor: '#ff7777',
+      upColor: '#c1f56e', downColor: '#ff7777',
+      borderUpColor: '#c1f56e', borderDownColor: '#ff7777',
+      wickUpColor: '#c1f56e', wickDownColor: '#ff7777',
       priceFormat: { type: 'price', precision: 8, minMove: 0.000000001 },
     });
-
     const volSeries = chart.addHistogramSeries({
       priceFormat: { type: 'volume' },
       priceScaleId: '',
@@ -402,22 +511,15 @@ async function loadChart(address, type = '15m') {
       scaleMarginBottom: 0,
     });
 
-    const candleData = items.map((d) => ({ time: d.unixTime, open: d.o, high: d.h, low: d.l, close: d.c }));
-    const volData = items.map((d) => ({
+    candleSeries.setData(items.map((d) => ({ time: d.unixTime, open: d.o, high: d.h, low: d.l, close: d.c })));
+    volSeries.setData(items.map((d) => ({
       time: d.unixTime,
       value: d.v,
       color: d.c >= d.o ? 'rgba(193,245,110,0.25)' : 'rgba(255,119,119,0.25)',
-    }));
-
-    candleSeries.setData(candleData);
-    volSeries.setData(volData);
+    })));
     chart.timeScale().fitContent();
-
     _chart = chart;
-    _candleSeries = candleSeries;
-    _volSeries = volSeries;
 
-    // Resize observer
     const ro = new ResizeObserver(() => {
       if (_chart) _chart.applyOptions({ width: container.clientWidth });
     });
@@ -426,45 +528,80 @@ async function loadChart(address, type = '15m') {
     if (loading) loading.hidden = true;
   } catch (err) {
     if (loading) loading.hidden = true;
+    const prev = container.querySelector('.chart-error');
+    if (prev) prev.remove();
     const errDiv = document.createElement('div');
     errDiv.className = 'chart-error';
     errDiv.innerHTML = `${IC.warn}<span>${escHtml(err.message || 'Chart unavailable')}</span>`;
-    // Remove previous error if any
-    const prev = container.querySelector('.chart-error');
-    if (prev) prev.remove();
     container.appendChild(errDiv);
   }
 }
 
 function setupChartTabs(address) {
   $$('[data-chart-tabs] .chart-tab').forEach((tab) => {
-    tab.addEventListener('click', () => loadChart(address, tab.dataset.type));
+    tab.onclick = () => loadChart(address, tab.dataset.type);
   });
 }
 
-// ─── Bubble map ───────────────────────────────────────────────────────────────
-function renderBubbleMap(address) {
+// ─── Bubble map (self-rendered SVG — no blocked iframes) ─────────────────────
+function renderBubbleMap(address, holders = []) {
   const section = $('[data-bubble-section]');
-  const iframe = $('[data-bubble-iframe]');
+  const canvas = $('[data-bubble-canvas]');
   const bmmLink = $('[data-bubblemaps-link]');
   const beLink = $('[data-birdeye-bubble]');
-  if (!section || !iframe) return;
+  if (!section || !canvas) return;
 
   const bmUrl = `https://app.bubblemaps.io/sol/token/${encodeURIComponent(address)}`;
   const beUrl = `https://birdeye.so/token/${encodeURIComponent(address)}?chain=solana#holders`;
-
   if (bmmLink) { bmmLink.href = bmUrl; bmmLink.hidden = false; }
   if (beLink) { beLink.href = beUrl; beLink.hidden = false; }
-
-  // Lazy-load iframe on intersect
-  const observer = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting) {
-      iframe.src = `${bmUrl}?theme=dark`;
-      observer.disconnect();
-    }
-  }, { rootMargin: '200px' });
-  observer.observe(section);
   section.hidden = false;
+
+  const items = holders.filter((h) => h.percentage !== null && h.percentage > 0).slice(0, 10);
+  if (!items.length) {
+    canvas.innerHTML = '<div class="empty-copy"><b>No holder share data</b><span>Bubble view needs holder percentages from a configured provider.</span></div>';
+    return;
+  }
+
+  const W = 720, H = 360;
+  const maxPct = Math.max(...items.map((h) => h.percentage));
+  const maxR = 78, minR = 18;
+  const placed = [];
+
+  items.forEach((h, i) => {
+    const r = minR + (maxR - minR) * Math.sqrt(h.percentage / maxPct);
+    // spiral placement avoiding overlap
+    let x = W / 2, y = H / 2, angle = i * 2.39996, dist = 0;
+    for (let attempt = 0; attempt < 400; attempt++) {
+      x = W / 2 + Math.cos(angle) * dist;
+      y = H / 2 + Math.sin(angle) * dist * 0.55;
+      const clear = placed.every((p) => Math.hypot(p.x - x, p.y - y) >= p.r + r + 6);
+      const inside = x - r > 4 && x + r < W - 4 && y - r > 4 && y + r < H - 4;
+      if (clear && inside) break;
+      angle += 0.35;
+      dist += 2.2;
+    }
+    placed.push({ x, y, r, holder: h, index: i });
+  });
+
+  const colors = ['#c1f56e', '#7fb2ff', '#7fb2ff', '#ff7777', '#7fb2ff', '#a68cff', '#7fb2ff', '#5fd4c4', '#7fb2ff', '#f0b45a'];
+  canvas.innerHTML = `
+    <svg class="bubble-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Top holder bubble map">
+      ${placed.map((p, i) => {
+        const c = colors[i % colors.length];
+        const showText = p.r > 26;
+        return `
+          <a href="https://solscan.io/account/${escHtml(p.holder.address)}" target="_blank" rel="noreferrer">
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${p.r.toFixed(1)}" fill="${c}18" stroke="${c}" stroke-width="1.5">
+              <title>${escHtml(shortAddr(p.holder.address))} — ${escHtml(pct(p.holder.percentage, false))} of supply</title>
+            </circle>
+            ${showText ? `
+              <text x="${p.x.toFixed(1)}" y="${(p.y - 3).toFixed(1)}" text-anchor="middle" class="bubble-pct" fill="${c}">${escHtml(pct(p.holder.percentage, false))}</text>
+              <text x="${p.x.toFixed(1)}" y="${(p.y + 13).toFixed(1)}" text-anchor="middle" class="bubble-addr">${escHtml(shortAddr(p.holder.address))}</text>
+            ` : ''}
+          </a>`;
+      }).join('')}
+    </svg>`;
 }
 
 // ─── Copy row buttons ─────────────────────────────────────────────────────────
@@ -491,8 +628,7 @@ function setupRefreshButton() {
   if (!btn) return;
   btn.addEventListener('click', () => {
     if (!_lastAnalyzedValue) return;
-    const now = Date.now();
-    if (now < _refreshCooldownEnd) return;
+    if (Date.now() < _refreshCooldownEnd) return;
     analyzeToken(_lastAnalyzedValue);
   });
 }
@@ -520,9 +656,9 @@ function startRefreshCooldown() {
   }, 250);
 }
 
-// ─── Main render ──────────────────────────────────────────────────────────────
+// ─── Token analysis render ────────────────────────────────────────────────────
 function renderAnalysis(data) {
-  const { token, liquidity, holders, topTraders, earlyBuyers, developer, monitoring, dexBoosts } = data;
+  const { token, liquidity, holders, topTraders, earlyBuyers, developer, monitoring } = data;
   const analysis = $('[data-analysis]');
   if (!analysis) return;
   analysis.hidden = false;
@@ -532,6 +668,7 @@ function renderAnalysis(data) {
   setText('[data-token-address]', shortAddr(data.address));
   setHref('[data-token-solscan]', `https://solscan.io/token/${data.address}`);
   setHref('[data-pair-link]', token.pairUrl);
+  renderSocials(token);
 
   const avatar = $('[data-token-avatar]');
   if (avatar) {
@@ -556,7 +693,6 @@ function renderAnalysis(data) {
   renderBars('[data-price-bars]', [28, 36, 31, 48, 44, 57, 52, 70, 61, 78, 74, 88]);
   renderBars('[data-volume-bars]', [20, 34, 28, 52, 45, 62, 54, 76, 62, 92, 80, 100], 'blue');
 
-  // Birdeye chart link
   const birdeyeChartLink = $('[data-birdeye-chart]');
   if (birdeyeChartLink) {
     birdeyeChartLink.href = `https://birdeye.so/token/${data.address}?chain=solana`;
@@ -592,27 +728,22 @@ function renderAnalysis(data) {
   setText('[data-authority-share]', pct(developer.balancePercentage));
   setText('[data-developer-source]', developer.source);
 
-  // Holder concentration
+  // Holders
   setText('[data-holder-total]', holders.totalKnown ? `${count(holders.totalKnown)} total holders` : 'provider snapshot');
   setText('[data-top-ten]', holders.top10Percentage === null ? 'not calculated' : `top ${Math.min(holders.top.length, 10)} · ${holders.top10Percentage.toFixed(1)}%`);
   renderHolderBars(holders.top);
-
-  // Holders table
   renderHoldersTable(holders.top);
 
-  // Top traders
+  // Traders + early buyers
   renderTraders(topTraders || []);
-
-  // Early buyers
   renderEarlyBuyers(earlyBuyers || []);
 
-  // Warnings & monitoring
+  // Monitoring
   setText('[data-monitoring-coverage]', monitoring.paidOrders === null ? 'limited coverage' : 'live checks');
   setText('[data-paid-orders]', monitoring.paidOrders === null ? '—' : monitoring.paidOrders ? 'Paid order active' : 'No paid order found');
   setText('[data-boosts]', monitoring.boosts === null ? '—' : monitoring.boosts > 0 ? `${monitoring.boosts} active` : 'None');
   renderWarnings(monitoring.warnings);
 
-  // Paid order type tags
   const paidTypesEl = $('[data-paid-order-types]');
   if (paidTypesEl) {
     const types = (monitoring.paidOrderTypes || []).filter(Boolean);
@@ -621,25 +752,20 @@ function renderAnalysis(data) {
       : '';
   }
 
-  // Provider pills
   renderProviders(data.providers);
 
-  // Chart
-  _currentAddress = data.address;
+  // Chart + bubble map
   setupChartTabs(data.address);
   loadChart(data.address, _currentChartType);
+  renderBubbleMap(data.address, holders.top);
 
-  // Bubble map
-  renderBubbleMap(data.address);
+  // Remember this scan for the homepage
+  saveRecentScan({ address: data.address, name: token.name, symbol: token.symbol });
 
-  // Scroll into view
-  analysis.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  // Start cooldown
   startRefreshCooldown();
 }
 
-// ─── API call ─────────────────────────────────────────────────────────────────
+// ─── Token API call ───────────────────────────────────────────────────────────
 async function analyzeToken(value) {
   hideError();
   setLoading(true);
@@ -660,7 +786,100 @@ async function analyzeToken(value) {
   }
 }
 
-// ─── Navigation ───────────────────────────────────────────────────────────────
+// ─── Wallet analysis ─────────────────────────────────────────────────────────
+function renderWalletAnalysis(data) {
+  const section = $('[data-wallet-analysis]');
+  if (!section) return;
+  section.hidden = false;
+
+  setText('[data-wallet-title]', 'Wallet overview');
+  setText('[data-wallet-address]', shortAddr(data.address));
+  setHref('[data-wallet-solscan]', `https://solscan.io/account/${data.address}`);
+
+  const { portfolio, holdings, activity, signals } = data;
+
+  setText('[data-wallet-total]', money(portfolio.totalValueUsd));
+  setText('[data-wallet-token-count]', `${portfolio.tokenCount} token${portfolio.tokenCount !== 1 ? 's' : ''} held${portfolio.nftCount ? ` · ${portfolio.nftCount} NFTs` : ''}`);
+  setText('[data-wallet-sol]', portfolio.solBalance !== null ? `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(portfolio.solBalance)} SOL` : '—');
+  setText('[data-wallet-sol-usd]', 'Native balance');
+  setText('[data-wallet-risk]', signals.risk === 'unknown' ? '—' : signals.risk.toUpperCase());
+  setText('[data-wallet-top-share]', signals.topHoldingPercentage !== null ? `Top holding is ${signals.topHoldingPercentage.toFixed(1)}% of portfolio` : 'Concentration not calculated');
+
+  // Holdings table
+  const holdingsEl = $('[data-wallet-holdings]');
+  if (holdingsEl) {
+    holdingsEl.innerHTML = holdings.length ? `
+      <div class="holder-table-head wallet-holdings-head">
+        <span>#</span><span>Token</span><span>Balance</span><span>Value (USD)</span><span>Share</span><span></span>
+      </div>
+      ${holdings.map((h, i) => {
+        const share = portfolio.totalValueUsd && h.valueUsd !== null ? (h.valueUsd / portfolio.totalValueUsd) * 100 : null;
+        return `<div class="holder-row wallet-holdings-row">
+          <span class="rank">${String(i + 1).padStart(2, '0')}</span>
+          <span class="token-cell">
+            ${h.logo ? `<img class="token-mini-logo" src="${escHtml(safeUrl(h.logo))}" alt="" onerror="this.remove();">` : ''}
+            <b>${escHtml(h.symbol)}</b>
+            <small>${escHtml(h.name)}</small>
+          </span>
+          <span class="mono">${h.balance !== null ? escHtml(count(h.balance)) : '—'}</span>
+          <span class="mono">${escHtml(money(h.valueUsd))}</span>
+          <b>${share !== null ? escHtml(pct(share, false)) : '—'}</b>
+          <span class="row-actions">
+            ${h.address ? `<button class="icon-action" data-copy-addr="${escHtml(h.address)}" title="Copy token address">${IC.copy}</button>
+            <a class="icon-action" href="/token.html?address=${escHtml(h.address)}" title="Analyze this token">${IC.boost}</a>
+            <a class="icon-action" href="https://solscan.io/token/${escHtml(h.address)}" target="_blank" rel="noreferrer" title="Solscan">${IC.ext}</a>` : ''}
+          </span>
+        </div>`;
+      }).join('')}
+    ` : '<div class="empty-copy"><b>No indexed holdings</b><span>No fungible token holdings were returned for this wallet.</span></div>';
+    bindCopyButtons(holdingsEl);
+  }
+
+  // Activity
+  const activityEl = $('[data-wallet-activity]');
+  if (activityEl) {
+    activityEl.innerHTML = activity.length ? activity.map((a) => `
+      <div class="activity-row">
+        <span class="activity-type">${escHtml(a.type)}</span>
+        <span class="mono activity-desc">${escHtml(a.description.length > 60 ? `${a.description.slice(0, 60)}…` : a.description)}</span>
+        <span class="mono time-cell">${IC.clock} ${escHtml(a.timestamp ? isoDate(a.timestamp) : '—')}</span>
+        <span class="row-actions">
+          <a class="icon-action" href="https://solscan.io/tx/${escHtml(a.signature)}" target="_blank" rel="noreferrer" title="View transaction">${IC.ext}</a>
+        </span>
+      </div>
+    `).join('') : '<div class="empty-copy"><b>No recent activity</b><span>Transaction history needs a Solscan key or the wallet has no indexed activity.</span></div>';
+  }
+
+  // Notes
+  const notesEl = $('[data-wallet-notes]');
+  if (notesEl) {
+    notesEl.innerHTML = signals.notes.length
+      ? signals.notes.slice(0, 5).map((n) => `<p class="warning-line">${IC.warn}${escHtml(n)}</p>`).join('')
+      : `<p class="success-line">${IC.check} Full provider coverage for this wallet.</p>`;
+  }
+
+  renderProviders(data.providers);
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function analyzeWallet(address) {
+  hideError();
+  setLoading(true);
+  try {
+    const res = await fetch(`/api/wallet?${new URLSearchParams({ address: address.trim() })}`, { headers: { Accept: 'application/json' } });
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) throw new Error(`The wallet service returned a non-JSON response (${res.status}).`);
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'The wallet analysis could not be loaded.');
+    renderWalletAnalysis(body);
+  } catch (err) {
+    showError(err instanceof Error ? err.message : 'The wallet analysis could not be loaded.');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ─── Navigation / auth (shared) ──────────────────────────────────────────────
 function setupNavigation() {
   const toggle = $('[data-menu-toggle]');
   const nav = $('[data-mobile-nav]');
@@ -676,7 +895,6 @@ function setupNavigation() {
   );
 }
 
-// ─── Auth modal ───────────────────────────────────────────────────────────────
 function setupAuth() {
   const modal = $('[data-auth-modal]');
   if (!modal) return;
@@ -686,7 +904,7 @@ function setupAuth() {
     $('[data-auth-title]', modal).textContent = su ? 'Create your account' : 'Welcome back';
     $('[data-auth-copy]', modal).textContent = su ? 'Save watchlists and return to your research desk.' : 'Sign in to save watchlists and return to your research desk.';
     $('[data-name-field]', modal).hidden = !su;
-    $('[data-auth-submit]', modal).innerHTML = su ? `Create account ${IC.ext}` : `Sign in ${IC.ext}`;
+    $('[data-auth-submit]', modal).textContent = su ? 'Create account' : 'Sign in';
     $('[data-auth-switch-copy]', modal).textContent = su ? 'Already have an account?' : 'New to Dyorly?';
     $('[data-auth-switch]', modal).textContent = su ? 'Sign in' : 'Register';
   };
@@ -708,25 +926,77 @@ function setupAuth() {
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
   setupAuth();
-  setupRefreshButton();
+  loadMarketStrip();
 
   $('[data-dismiss-error]')?.addEventListener('click', hideError);
 
-  $('[data-sample]')?.addEventListener('click', () => {
-    const input = $('#asset-input');
-    if (input) { input.value = SAMPLE_TOKEN; input.focus(); }
-  });
+  const isTokenPage = document.body.classList.contains('token-page');
+  const isWalletPage = document.body.classList.contains('wallet-page');
 
-  $('[data-token-form]')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    analyzeToken($('#asset-input')?.value || '');
-  });
+  // ── Homepage: form redirects to the token page ──
+  if (!isTokenPage && !isWalletPage) {
+    renderRecentScans();
+    $('[data-sample]')?.addEventListener('click', () => {
+      const input = $('#asset-input');
+      if (input) { input.value = SAMPLE_TOKEN; input.focus(); }
+    });
+    $('[data-token-form]')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const value = ($('#asset-input')?.value || '').trim() || SAMPLE_TOKEN;
+      window.location.href = `/token.html?address=${encodeURIComponent(value)}`;
+    });
+  }
 
-  $('[data-copy]')?.addEventListener('click', async () => {
-    const addrEl = $('[data-token-address]');
-    if (addrEl?.textContent) await copyToClipboard(addrEl.textContent.replace('…', ''));
-  });
+  // ── Token page: auto-analyze from ?address= ──
+  if (isTokenPage) {
+    setupRefreshButton();
+    $('[data-token-form]')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const value = ($('#asset-input')?.value || '').trim();
+      if (!value) return;
+      const url = new URL(window.location.href);
+      url.searchParams.set('address', value);
+      window.history.replaceState({}, '', url);
+      analyzeToken(value);
+    });
+    $('[data-copy]')?.addEventListener('click', async () => {
+      if (_lastAnalyzedValue) await copyToClipboard(_lastAnalyzedValue);
+    });
 
-  // Scroll to #analyze if hash is set
-  if (location.hash === '#analyze') setTimeout(() => $('#analyze')?.scrollIntoView(), 100);
+    const params = new URLSearchParams(window.location.search);
+    const address = (params.get('address') || '').trim();
+    if (address) {
+      const input = $('#asset-input');
+      if (input) input.value = address;
+      analyzeToken(address);
+    } else {
+      showError('Paste a token address above to start the analysis.');
+    }
+  }
+
+  // ── Wallet page ──
+  if (isWalletPage) {
+    $('[data-wallet-form]')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const value = ($('#wallet-input')?.value || '').trim();
+      if (!value) return;
+      const url = new URL(window.location.href);
+      url.searchParams.set('address', value);
+      window.history.replaceState({}, '', url);
+      analyzeWallet(value);
+    });
+    $('[data-wallet-copy]')?.addEventListener('click', async () => {
+      const params = new URLSearchParams(window.location.search);
+      const addr = params.get('address');
+      if (addr) await copyToClipboard(addr);
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const address = (params.get('address') || '').trim();
+    if (address) {
+      const input = $('#wallet-input');
+      if (input) input.value = address;
+      analyzeWallet(address);
+    }
+  }
 });
