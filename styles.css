@@ -249,7 +249,12 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
 
 /* ── Early buyers table ──────────────────────────────────────────────────── */
 .early-buyers-card{padding:0;overflow:hidden}
-.early-table-head,.early-row{display:grid;grid-template-columns:36px 1fr 130px 120px 56px;gap:8px;align-items:center;padding:11px 16px;font-size:11px}
+.early-table-head,.early-row{display:grid;grid-template-columns:32px 1fr 100px 90px 80px 140px 90px 90px 90px 76px;gap:8px;align-items:center;padding:11px 16px;font-size:11px}
+.position-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.position-badge.holding{background:rgba(193,245,110,.12);color:#c1f56e}
+.position-badge.partial{background:rgba(255,184,77,.12);color:#ffb84d}
+.position-badge.sold{background:rgba(255,119,119,.12);color:#ff7777}
+.position-badge.unknown{color:#5e6b7b}
 .early-table-head{background:rgba(149,170,194,.04);border-bottom:1px solid var(--line);color:#6d7b8c;font-size:10px;text-transform:uppercase;letter-spacing:.1em}
 .early-row{border-bottom:1px solid var(--line)}
 .early-row:last-child{border-bottom:0}
@@ -356,6 +361,10 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
   .dex-intel-grid{grid-template-columns:1fr 1fr}
   .dex-intel-grid .dex-intel-card:last-child{grid-column:span 2}
   .trader-table-head,.trader-row{grid-template-columns:1fr 90px 90px 100px 110px 52px;gap:6px}
+  .early-table-head,.early-row{grid-template-columns:1fr 70px 100px 80px 80px 52px;gap:6px}
+  .early-table-head span:nth-child(1),.early-row .rank,
+  .early-table-head span:nth-child(3),.early-row .time-cell,
+  .early-table-head span:nth-child(4),.early-row span:nth-child(4){display:none}
   .trader-table-head span:nth-child(3),.trader-row span:nth-child(3){display:none}
   .bubble-embed-wrap{height:420px}
 }
@@ -413,9 +422,13 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
   .trader-row span:nth-child(2),
   .trader-row span:nth-child(3),
   .trader-row span:nth-child(4){display:none}
-  /* Early table: collapse initial amount */
-  .early-table-head,.early-row{grid-template-columns:30px 1fr 110px 44px;gap:5px;padding:10px 12px}
-  .early-table-head span:nth-child(4),.early-row span:nth-child(4){display:none}
+  /* Early table: keep wallet, status, holds, realized PnL, actions on mobile */
+  .early-table-head,.early-row{grid-template-columns:1fr 70px 100px 80px 52px;gap:5px;padding:10px 12px}
+  .early-table-head span:nth-child(1),.early-row .rank,
+  .early-table-head span:nth-child(3),.early-row .time-cell,
+  .early-table-head span:nth-child(4),.early-row span:nth-child(4),
+  .early-table-head span:nth-child(7),.early-row span:nth-child(7),
+  .early-table-head span:nth-child(9),.early-row b:nth-of-type(2){display:none}
   .provider-footer{align-items:flex-start;flex-direction:column}
   .provider-pills{justify-content:flex-start}
   .why-section{padding-top:45px;padding-bottom:55px}

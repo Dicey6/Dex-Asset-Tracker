@@ -32,6 +32,12 @@ export interface EarlyBuyer {
   solscanUrl: string;
   solscanTxUrl: string | null;
   position?: WalletTokenPosition | null;
+  currentBalance: number | null;
+  currentBalanceFormatted: string;
+  percentOfInitial: number | null;
+  positionStatus: 'holding' | 'partial' | 'sold' | null;
+  realizedPnl: number | null;
+  unrealizedPnl: number | null;
 }
 
 export interface TraderSummary {

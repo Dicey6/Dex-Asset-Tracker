@@ -235,8 +235,10 @@ function renderVenues(venues = [], total = 0) {
 }
 
 // ─── Position badge (wallet status for holders / buyers) ────────────────────
+// Accepts either a position object ({ status }) or a bare status string.
 function positionBadge(position) {
-  if (!position) return '<span class="pos-badge unknown">No data</span>';
+  const status = typeof position === 'string' ? position : position ? position.status : null;
+  if (!status) return '<span class="pos-badge position-badge unknown">No data</span>';
   const map = {
     holding: ['holding', 'Holding'],
     increased: ['holding', 'Added more'],
@@ -244,8 +246,8 @@ function positionBadge(position) {
     sold: ['sold', 'Sold out'],
     unknown: ['unknown', 'Unknown'],
   };
-  const [cls, label] = map[position.status] || map.unknown;
-  return `<span class="pos-badge ${cls}">${label}</span>`;
+  const [cls, label] = map[status] || map.unknown;
+  return `<span class="pos-badge position-badge ${cls}">${label}</span>`;
 }
 
 // ─── Top holders (concentration bars) ────────────────────────────────────────
@@ -339,7 +341,7 @@ function renderTraders(traders = []) {
   bindCopyButtons(el);
 }
 
-// ─── Early buyers table (with live wallet position) ──────────────────────────
+// ─── Early buyers table (with live wallet position + PnL) ────────────────────
 function renderEarlyBuyers(buyers = []) {
   const section = $('[data-early-section]');
   const el = $('[data-early-buyers]');
@@ -350,18 +352,20 @@ function renderEarlyBuyers(buyers = []) {
   }
   if (section) section.hidden = false;
   el.innerHTML = `
-    <div class="early-table-head wide">
+    <div class="early-table-head">
       <span>#</span>
       <span>Wallet</span>
       <span>First bought</span>
       <span>Initial amount</span>
+      <span>Status</span>
       <span>Holds now</span>
       <span>Value (USD)</span>
-      <span>Status</span>
+      <span>Realized PnL</span>
+      <span>Unrealized PnL</span>
       <span></span>
     </div>
     ${buyers.map((b, i) => `
-      <div class="early-row wide">
+      <div class="early-row">
         <span class="rank">${String(i + 1).padStart(2, '0')}</span>
         <span class="mono address">${escHtml(shortAddr(b.address))}</span>
         <span class="mono time-cell">
@@ -369,12 +373,15 @@ function renderEarlyBuyers(buyers = []) {
           ${escHtml(b.firstBuyTimestamp ? relativeTime(b.firstBuyTimestamp) : '—')}
         </span>
         <span class="mono">${escHtml(b.initialAmountFormatted || '—')}</span>
-        <span class="mono">${escHtml(b.position ? b.position.currentBalanceFormatted : '—')}</span>
+        <span>${positionBadge(b.positionStatus ?? b.position)}</span>
+        <span class="mono">${escHtml(b.currentBalanceFormatted || (b.position ? b.position.currentBalanceFormatted : '—') || '—')}${b.percentOfInitial !== null && b.percentOfInitial !== undefined ? ` <small class="muted-copy">(${escHtml(pct(Math.min(b.percentOfInitial, 999), false))} of buy)</small>` : ''}</span>
         <span class="mono">${escHtml(b.position ? money(b.position.currentValueUsd) : '—')}</span>
-        ${positionBadge(b.position)}
+        <b class="${pnlClass(b.realizedPnl)}">${escHtml(money(b.realizedPnl))}</b>
+        <b class="${pnlClass(b.unrealizedPnl)}">${escHtml(money(b.unrealizedPnl))}</b>
         <span class="row-actions">
           <button class="icon-action" data-copy-addr="${escHtml(b.address)}" title="Copy wallet">${IC.copy}</button>
           <a class="icon-action" href="${escHtml(b.solscanUrl)}" target="_blank" rel="noreferrer" title="Solscan wallet">${IC.ext}</a>
+          ${b.solscanTxUrl ? `<a class="icon-action" href="${escHtml(b.solscanTxUrl)}" target="_blank" rel="noreferrer" title="View transaction">${IC.clock}</a>` : ''}
           <a class="icon-action" href="/wallet.html?address=${escHtml(b.address)}" title="Analyze this wallet">${IC.user}</a>
         </span>
       </div>

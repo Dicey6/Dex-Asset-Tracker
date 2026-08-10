@@ -12,6 +12,7 @@ import {
   type ApiResponse,
   type JsonRecord,
 } from './_shared';
+import { computeBuyerPnl } from './pnl';
 
 const DEX = 'https://api.dexscreener.com';
 
@@ -78,7 +79,9 @@ async function heliusHolders(address: string, key: string) {
   return body.result ?? {};
 }
 
-async function heliusEarlyBuyers(address: string, key: string): Promise<EarlyBuyer[]> {
+// hint resolved: combines main's cached wallet position lookup with this task's trades-based PnL.
+// hint: Logic changed on both sides. Requires understanding intent of each change.
+async function heliusEarlyBuyers(address: string, key: string, birdeyeKey?: string): Promise<EarlyBuyer[]> {
   // Step 1: Get all signatures for the token mint (newest first, limit 1000)
   const sigsBody = await fetchJson<JsonRecord>(`https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(key)}`, {
     method: 'POST',
@@ -119,20 +122,72 @@ async function heliusEarlyBuyers(address: string, key: string): Promise<EarlyBuy
           initialAmount: firstNumber(transfer.tokenAmount),
           initialAmountFormatted: transfer.tokenAmount
             ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, notation: 'compact' }).format(Number(transfer.tokenAmount))
-            : '—',
+            : '\u2014',
           signature: sig || null,
           solscanUrl: `https://solscan.io/account/${wallet}`,
           solscanTxUrl: sig ? `https://solscan.io/tx/${sig}` : null,
+          currentBalance: null,
+          currentBalanceFormatted: '\u2014',
+          percentOfInitial: null,
+          positionStatus: null,
+          realizedPnl: null,
+          unrealizedPnl: null,
         });
       }
     }
   }
 
-  return [...buyers.values()]
+  const earlyBuyers = [...buyers.values()]
     .sort((a, b) => (a.firstBuyTimestamp ?? 0) - (b.firstBuyTimestamp ?? 0))
     .slice(0, 10);
-}
 
+  // Step 3 (optional): enrich each buyer with their current Birdeye position and
+  // trades-based PnL. Runs as a parallel batch with short timeouts; failures
+  // never block the full response.
+  if (birdeyeKey && earlyBuyers.length) {
+    const enrichments = await Promise.all(
+      earlyBuyers.map(async (buyer) => {
+        // Bound history at the buyer's first buy (minus 1h buffer) — they cannot
+        // have traded this token before it existed for them.
+        const afterTime = buyer.firstBuyTimestamp ? Math.max(0, buyer.firstBuyTimestamp - 3600) : 0;
+        const [position, trades] = await Promise.all([
+          birdeyeWalletPosition(buyer.address, address, birdeyeKey, null).catch(() => null),
+          birdeyeWalletTrades(buyer.address, birdeyeKey, afterTime).catch(() => undefined),
+        ]);
+        return { position, trades };
+      }),
+    );
+    earlyBuyers.forEach((buyer, index) => {
+      const { trades } = enrichments[index];
+      const position = positionStatus(enrichments[index].position, buyer.initialAmount);
+      if (position) {
+        buyer.position = position;
+        const currentBalance = position.currentBalance ?? 0;
+        buyer.currentBalance = currentBalance;
+        buyer.currentBalanceFormatted = position.currentBalanceFormatted;
+        if (buyer.initialAmount && buyer.initialAmount > 0) {
+          buyer.percentOfInitial = Math.max(0, (currentBalance / buyer.initialAmount) * 100);
+        }
+        buyer.positionStatus = position.status === 'sold' ? 'sold'
+          : position.status === 'partial' ? 'partial'
+          : position.status === 'holding' || position.status === 'increased' ? 'holding'
+          : null;
+      }
+      // Only report PnL when the full trade history was retrieved — partial
+      // history would produce confidently wrong dollar values.
+      if (trades !== undefined && trades.complete) {
+        const currentPrice = position && position.currentBalance && position.currentValueUsd
+          ? position.currentValueUsd / position.currentBalance
+          : null;
+        const pnl = computeBuyerPnl(trades.items, address, buyer.currentBalance, currentPrice);
+        buyer.realizedPnl = pnl.realizedPnl;
+        buyer.unrealizedPnl = pnl.unrealizedPnl;
+      }
+    });
+  }
+
+  return earlyBuyers;
+}
 async function birdeyeOverview(address: string, key: string) {
   return fetchJson<JsonRecord>(`https://public-api.birdeye.so/defi/token_overview?address=${encodeURIComponent(address)}&chain=solana`, {
     headers: { 'X-API-KEY': key, 'x-chain': 'solana' },
@@ -197,6 +252,44 @@ async function birdeyeWalletPosition(
   }
   positionCache.set(cacheKey, { at: Date.now(), value });
   return value;
+}
+
+const TRADES_PAGE_LIMIT = 100;
+/**
+ * Fetch a wallet's swap history from Birdeye, paginating oldest-ward via
+ * `before_time` until the history reaches `afterTime` (the buyer's first-buy
+ * timestamp, minus a buffer) or is exhausted. Returns the merged items plus a
+ * `complete` flag; callers must NOT trust PnL derived from incomplete history.
+ */
+async function birdeyeWalletTrades(wallet: string, key: string, afterTime: number) {
+  const items: JsonRecord[] = [];
+  let beforeTime: number | null = null;
+
+  for (let page = 0; page < TRADES_MAX_PAGES; page++) {
+    const params = new URLSearchParams({ address: wallet, tx_type: 'swap', limit: String(TRADES_PAGE_LIMIT) });
+    if (beforeTime !== null) params.set('before_time', String(beforeTime));
+    if (afterTime > 0) params.set('after_time', String(afterTime));
+    const body: JsonRecord = await fetchJson<JsonRecord>(
+      `https://public-api.birdeye.so/trader/txs/seek_by_time?${params.toString()}`,
+      { headers: { 'X-API-KEY': key, 'x-chain': 'solana' } },
+      5000,
+    );
+    const pageItems = asArray((body.data as JsonRecord | undefined)?.items ?? body.items);
+    items.push(...pageItems);
+
+    if (pageItems.length < TRADES_PAGE_LIMIT) return { items, complete: true };
+
+    const oldest = pageItems.reduce((min, item) => {
+      const t = firstNumber(item.block_unix_time, item.blockUnixTime, item.block_time, item.time);
+      return t !== null && t < min ? t : min;
+    }, Number.POSITIVE_INFINITY);
+    if (!Number.isFinite(oldest)) return { items, complete: false };
+    if (afterTime > 0 && oldest <= afterTime) return { items, complete: true };
+    beforeTime = oldest;
+  }
+
+  // Page cap hit with more history remaining — treat as incomplete.
+  return { items, complete: false };
 }
 
 function positionStatus(position: WalletTokenPosition | null, initialAmount: number | null): WalletTokenPosition | null {
@@ -285,7 +378,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     birdeyeKey ? optionalProvider(() => birdeyeTopTraders(address, birdeyeKey)) : Promise.resolve({ value: undefined, error: 'BIRDEYE_API_KEY not configured' }),
     solscanKey ? optionalProvider(() => solscanHolders(address, solscanKey)) : Promise.resolve({ value: undefined, error: 'SOLSCAN_API_KEY not configured' }),
     optionalProvider(() => fetchJson<JsonRecord>(`${DEX}/orders/v1/solana/${encodeURIComponent(address)}`)),
-    heliusKey ? optionalProvider(() => heliusEarlyBuyers(address, heliusKey)) : Promise.resolve({ value: undefined, error: 'HELIUS_API_KEY not configured' }),
+    heliusKey ? optionalProvider(() => heliusEarlyBuyers(address, heliusKey, birdeyeKey)) : Promise.resolve({ value: undefined, error: 'HELIUS_API_KEY not configured' }),
   ]);
 
   const asset = assetResult.value ?? {};
@@ -443,3 +536,5 @@ export default async function handler(request: ApiRequest, response: ApiResponse
 
   return sendJson(response, 200, result);
 }
+
+const TRADES_MAX_PAGES = 5;
