@@ -672,9 +672,15 @@ function renderAnalysis(data) {
 
   const avatar = $('[data-token-avatar]');
   if (avatar) {
-    avatar.innerHTML = token.logo
-      ? `<img src="${escHtml(safeUrl(token.logo))}" alt="" onerror="this.parentElement.textContent='${escHtml(token.symbol.slice(0, 1))}';">`
-      : escHtml(token.symbol.slice(0, 1));
+    avatar.textContent = token.symbol.slice(0, 1);
+    const logoUrl = token.logo ? safeUrl(token.logo) : '#';
+    if (logoUrl !== '#') {
+      const img = document.createElement('img');
+      img.alt = '';
+      img.addEventListener('error', () => { avatar.textContent = token.symbol.slice(0, 1); });
+      img.addEventListener('load', () => { avatar.textContent = ''; avatar.appendChild(img); });
+      img.src = logoUrl;
+    }
   }
 
   // Price & market
@@ -817,7 +823,7 @@ function renderWalletAnalysis(data) {
         return `<div class="holder-row wallet-holdings-row">
           <span class="rank">${String(i + 1).padStart(2, '0')}</span>
           <span class="token-cell">
-            ${h.logo ? `<img class="token-mini-logo" src="${escHtml(safeUrl(h.logo))}" alt="" onerror="this.remove();">` : ''}
+            ${h.logo && safeUrl(h.logo) !== '#' ? `<img class="token-mini-logo" src="${escHtml(safeUrl(h.logo))}" alt="">` : ''}
             <b>${escHtml(h.symbol)}</b>
             <small>${escHtml(h.name)}</small>
           </span>

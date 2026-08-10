@@ -370,7 +370,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   const allOrders = asArray(orderResult.value);
   const paidOrdersList = allOrders.filter((o) => {
     const status = String(o.status ?? '').toLowerCase();
-    return status === 'approved' || status === 'processing' || status === '';
+    return status === 'approved' || status === 'processing';
   });
   const paidOrderTypes = [...new Set(paidOrdersList
     .map((o) => String(o.type ?? o.orderType ?? '')).filter(Boolean))];

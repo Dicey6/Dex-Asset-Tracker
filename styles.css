@@ -510,12 +510,15 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
 @media(max-width:920px){
   .feature-grid{grid-template-columns:repeat(2,1fr)}
   .source-grid{grid-template-columns:repeat(2,1fr)}
+  /* Holder wide: hide Balance (3) and Value (5) in both head and rows */
   .holder-table-head.wide,.holder-row.wide{grid-template-columns:30px 1fr 70px 92px 70px}
-  .holder-table-head.wide span:nth-child(3),.holder-row.wide .balance,
-  .holder-table-head.wide span:nth-child(5),.holder-row.wide span.mono:nth-of-type(3){display:none}
+  .holder-table-head.wide>*:nth-child(3),.holder-row.wide>*:nth-child(3),
+  .holder-table-head.wide>*:nth-child(5),.holder-row.wide>*:nth-child(5){display:none}
+  /* Early buyers wide: hide Initial (4), Holds now (5), Value (6) in both head and rows */
   .early-table-head.wide,.early-row.wide{grid-template-columns:30px 1fr 100px 92px 70px}
-  .early-table-head.wide span:nth-child(4),.early-table-head.wide span:nth-child(5),.early-table-head.wide span:nth-child(6){display:none}
-  .early-row.wide span.mono:nth-of-type(2),.early-row.wide span.mono:nth-of-type(3),.early-row.wide span.mono:nth-of-type(4){display:none}
+  .early-table-head.wide>*:nth-child(4),.early-row.wide>*:nth-child(4),
+  .early-table-head.wide>*:nth-child(5),.early-row.wide>*:nth-child(5),
+  .early-table-head.wide>*:nth-child(6),.early-row.wide>*:nth-child(6){display:none}
 }
 @media(max-width:640px){
   .feature-grid{grid-template-columns:1fr}
