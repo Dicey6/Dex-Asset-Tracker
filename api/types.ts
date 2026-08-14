@@ -1,4 +1,4 @@
-export type ProviderName = 'DexScreener' | 'Helius' | 'Birdeye' | 'Solscan';
+export type ProviderName = 'DexScreener' | 'Solana RPC' | 'Helius' | 'Birdeye' | 'Solscan';
 
 export interface ProviderStatus {
   name: ProviderName;

@@ -17,6 +17,8 @@ DexScreener is public and is intentionally used without an API key.
 ## Pages
 
 - `/` — token analysis desk
-- `/wallet.html` — wallet analysis placeholder
+- `/wallet.html` — wallet portfolio and activity analysis
+
+Wallet analysis uses Solana's public RPC for SOL balances and non-zero SPL token accounts. Optional Helius, Birdeye, and Solscan keys add metadata, USD pricing, NFTs, holder verification, and activity history.
 
 The sign-in and sign-up controls are presentation-only until account storage and authentication are connected.

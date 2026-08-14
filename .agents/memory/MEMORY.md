@@ -1,2 +1,3 @@
 - [Dyorly provider quirks](dyorly-provider-quirks.md) — Bubblemaps blocks iframe embeds; DexScreener boosts live on any pair; paid orders need explicit approved status; Birdeye token_balance for per-wallet positions.
 - [Birdeye wallet PnL](birdeye-pnl.md) — token_list has no PnL fields; compute from paginated seek_by_time trade history chronologically, null out PnL if history incomplete.
+- [Vercel serverless testing](vercel-serverless-testing.md) — Test root API handlers directly; do not add a local Vite API bridge to a Vercel-only app.
