@@ -334,9 +334,26 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
 .auth-modal input{height:42px;border-radius:8px;border:1px solid #33404f;background:rgba(4,8,13,.45);color:#e9eef3;padding:0 12px;outline:none;transition:border-color .15s}
 .auth-modal input:focus{border-color:var(--blue)}
 .full{width:100%;margin-top:3px}
+.auth-forgot{margin-top:12px;width:100%;justify-content:center}
 .auth-switch{text-align:center;margin-top:17px!important;font-size:11px!important;color:#8794a4}
 .auth-switch button{border:0;background:transparent;color:var(--blue);font-weight:700}
 .auth-note{border:1px solid rgba(193,245,110,.2);background:rgba(193,245,110,.05);border-radius:7px;color:#c1f56e;font-size:11px;padding:10px;margin-top:15px;text-align:center}
+.auth-note.error{border-color:rgba(255,119,119,.3);background:rgba(255,119,119,.06);color:#ff9b9b}
+.watchlist-modal{width:min(100%,620px);max-height:min(720px,calc(100vh - 40px));overflow:auto}
+.watchlist-items{display:grid;gap:10px;margin-top:22px}
+.watchlist-row{border:1px solid var(--line);background:rgba(4,8,13,.34);border-radius:10px;padding:13px}
+.watchlist-row-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.watchlist-row-heading>div{display:grid;gap:3px}
+.watchlist-row-heading small{color:#7e8b9a;font-size:11px}
+.watchlist-mint{display:block;color:#6f7d8e;font-size:10px;margin-top:9px}
+.watchlist-settings{display:grid;grid-template-columns:1fr 1fr auto auto;align-items:end;gap:8px;margin-top:13px}
+.watchlist-settings label{display:grid;gap:5px;color:#8794a4;font-size:10px}
+.watchlist-settings input[type=number]{width:100%;height:34px;border-radius:7px;border:1px solid #33404f;background:rgba(4,8,13,.45);color:#e9eef3;padding:0 9px}
+.watchlist-toggle{display:flex!important;align-items:center;gap:6px;white-space:nowrap;height:34px}
+.watchlist-toggle input{accent-color:var(--lime)}
+.text-button.red{color:#ff8b8b}
+.wallet-flow-head,.wallet-flow-row,.wallet-swap-head,.wallet-swap-row{grid-template-columns:58px 1fr 1fr 1.2fr 90px}
+.wallet-pnl-grid{margin-bottom:17px}
 
 /* ── Hidden states ───────────────────────────────────────────────────────── */
 .analysis-section[hidden],.error-wrap[hidden],[hidden]{display:none!important}
@@ -367,6 +384,10 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
   .early-table-head span:nth-child(4),.early-row span:nth-child(4){display:none}
   .trader-table-head span:nth-child(3),.trader-row span:nth-child(3){display:none}
   .bubble-embed-wrap{height:420px}
+}
+@media(max-width:620px){
+  .watchlist-settings{grid-template-columns:1fr 1fr}
+  .watchlist-toggle{grid-column:span 2}
 }
 
 /* ── Responsive: 650px ────────────────────────────────────────────────────── */

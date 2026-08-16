@@ -132,6 +132,33 @@ export interface WalletActivity {
   source: string;
 }
 
+export interface WalletTransfer {
+  signature: string;
+  tokenMint: string | null;
+  direction: 'in' | 'out';
+  amount: number | null;
+  counterparty: string | null;
+  timestamp: string | null;
+  source: string;
+}
+
+export interface WalletSwap {
+  signature: string;
+  tokenMint: string | null;
+  tokenSymbol: string | null;
+  side: string | null;
+  volumeUsd: number | null;
+  timestamp: string | null;
+  source: string;
+}
+
+export interface WalletPnl {
+  realizedUsd: number | null;
+  unrealizedUsd: number | null;
+  totalUsd: number | null;
+  source: string;
+}
+
 export interface WalletAnalysis {
   address: string;
   portfolio: {
@@ -142,6 +169,9 @@ export interface WalletAnalysis {
   };
   holdings: WalletHolding[];
   activity: WalletActivity[];
+  transfers: WalletTransfer[];
+  swaps: WalletSwap[];
+  pnl: WalletPnl | null;
   signals: {
     activeDays: number | null;
     topHoldingPercentage: number | null;

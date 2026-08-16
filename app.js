@@ -629,6 +629,9 @@ function bindCopyButtons(root = document) {
 let _lastAnalyzedValue = '';
 let _refreshCooldownEnd = 0;
 let _refreshTimer = null;
+let _supabase = null;
+let _authSession = null;
+let _currentTokenData = null;
 
 function setupRefreshButton() {
   const btn = $('[data-refresh]');
@@ -669,6 +672,12 @@ function renderAnalysis(data) {
   const analysis = $('[data-analysis]');
   if (!analysis) return;
   analysis.hidden = false;
+  _currentTokenData = data;
+  const watchButton = $('[data-watch-token]');
+  if (watchButton) {
+    watchButton.hidden = false;
+    watchButton.textContent = 'Watch token';
+  }
 
   // Heading
   setText('[data-token-name]', `${token.name} / ${token.symbol}`);
@@ -809,7 +818,7 @@ function renderWalletAnalysis(data) {
   setText('[data-wallet-address]', shortAddr(data.address));
   setHref('[data-wallet-solscan]', `https://solscan.io/account/${data.address}`);
 
-  const { portfolio, holdings, activity, signals } = data;
+  const { portfolio, holdings, activity, transfers = [], swaps = [], pnl, signals } = data;
 
   setText('[data-wallet-total]', money(portfolio.totalValueUsd));
   setText('[data-wallet-token-count]', `${portfolio.tokenCount} token${portfolio.tokenCount !== 1 ? 's' : ''} held${portfolio.nftCount ? ` · ${portfolio.nftCount} NFTs` : ''}`);
@@ -863,6 +872,50 @@ function renderWalletAnalysis(data) {
     `).join('') : '<div class="empty-copy"><b>No recent activity</b><span>Transaction history needs a Solscan key or the wallet has no indexed activity.</span></div>';
   }
 
+  const transfersEl = $('[data-wallet-transfers]');
+  if (transfersEl) {
+    transfersEl.innerHTML = transfers.length ? `
+      <div class="holder-table-head wallet-flow-head"><span>Flow</span><span>Token</span><span>Amount</span><span>Counterparty</span><span>Time</span></div>
+      ${transfers.slice(0, 12).map((transfer) => `
+        <div class="holder-row wallet-flow-row">
+          <b class="${transfer.direction === 'in' ? 'lime' : 'red'}">${transfer.direction === 'in' ? 'In' : 'Out'}</b>
+          <span class="mono">${escHtml(shortAddr(transfer.tokenMint))}</span>
+          <span class="mono">${transfer.amount !== null ? escHtml(count(transfer.amount)) : '—'}</span>
+          <span class="mono">${escHtml(shortAddr(transfer.counterparty))}</span>
+          <span class="mono time-cell">${escHtml(transfer.timestamp ? isoDate(transfer.timestamp) : '—')}</span>
+        </div>
+      `).join('')}
+    ` : '<div class="empty-copy"><b>No indexed transfers</b><span>Transfers require enhanced transaction data from Helius.</span></div>';
+  }
+
+  const swapsEl = $('[data-wallet-swaps]');
+  if (swapsEl) {
+    swapsEl.innerHTML = swaps.length ? `
+      <div class="holder-table-head wallet-swap-head"><span>Side</span><span>Token</span><span>Volume</span><span>Time</span><span></span></div>
+      ${swaps.slice(0, 12).map((swap) => `
+        <div class="holder-row wallet-swap-row">
+          <b>${escHtml(swap.side || 'Swap')}</b>
+          <span class="mono">${escHtml(swap.tokenSymbol || shortAddr(swap.tokenMint))}</span>
+          <span class="mono">${escHtml(money(swap.volumeUsd))}</span>
+          <span class="mono time-cell">${escHtml(swap.timestamp ? isoDate(swap.timestamp) : '—')}</span>
+          <a class="icon-action" href="https://solscan.io/tx/${encodeURIComponent(swap.signature)}" target="_blank" rel="noreferrer" title="View swap">${IC.ext}</a>
+        </div>
+      `).join('')}
+    ` : '<div class="empty-copy"><b>No indexed swaps</b><span>Swap history requires Birdeye trade data.</span></div>';
+  }
+
+  const pnlEl = $('[data-wallet-pnl]');
+  if (pnlEl) {
+    pnlEl.innerHTML = pnl ? `
+      <div class="flow-grid wallet-pnl-grid">
+        <div><span class="metric-label">Realized</span><strong class="${pnlClass(pnl.realizedUsd)}">${escHtml(money(pnl.realizedUsd))}</strong></div>
+        <div><span class="metric-label">Unrealized</span><strong class="${pnlClass(pnl.unrealizedUsd)}">${escHtml(money(pnl.unrealizedUsd))}</strong></div>
+        <div><span class="metric-label">Total</span><strong class="${pnlClass(pnl.totalUsd)}">${escHtml(money(pnl.totalUsd))}</strong></div>
+      </div>
+      <span class="metric-foot">${escHtml(pnl.source)} · no estimate when cost basis is unavailable</span>
+    ` : '<div class="empty-copy"><b>PnL unavailable</b><span>No reliable cost basis was returned, so Dyorly does not invent a number.</span></div>';
+  }
+
   // Notes
   const notesEl = $('[data-wallet-notes]');
   if (notesEl) {
@@ -885,6 +938,7 @@ async function analyzeWallet(address) {
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || 'The wallet analysis could not be loaded.');
     renderWalletAnalysis(body);
+    persistWalletAnalysis(address);
   } catch (err) {
     showError(err instanceof Error ? err.message : 'The wallet analysis could not be loaded.');
   } finally {
@@ -892,7 +946,56 @@ async function analyzeWallet(address) {
   }
 }
 
-// ─── Navigation / auth (shared) ──────────────────────────────────────────────
+// ─── Supabase session, auth, and watchlist (shared) ──────────────────────────
+async function getSupabase() {
+  if (_supabase) return _supabase;
+  if (!window.supabase?.createClient) return null;
+  const response = await fetch('/api/config', { headers: { Accept: 'application/json' } });
+  const config = await response.json().catch(() => ({}));
+  if (!config.url || !config.anonKey) return null;
+  _supabase = window.supabase.createClient(config.url, config.anonKey, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  });
+  return _supabase;
+}
+
+function showAuthNote(message, isError = false) {
+  const note = $('[data-auth-note]');
+  if (!note) return;
+  note.textContent = message;
+  note.hidden = false;
+  note.classList.toggle('error', isError);
+}
+
+function updateHeaderAuth() {
+  $$('.signin-button').forEach((button) => {
+    button.textContent = _authSession ? 'Sign out' : 'Sign in';
+    button.dataset.auth = _authSession ? 'signout' : 'signin';
+  });
+}
+
+async function initSupabase() {
+  try {
+    const client = await getSupabase();
+    if (!client) return;
+    const current = await client.auth.getSession();
+    _authSession = current.data.session;
+    updateHeaderAuth();
+    client.auth.onAuthStateChange((_event, session) => {
+      _authSession = session;
+      updateHeaderAuth();
+      if (session && location.hash.includes('type=recovery')) {
+        window.__dyorlyOpenAuth?.('set-password');
+      }
+    });
+    if (location.hash.includes('type=recovery')) {
+      window.__dyorlyOpenAuth?.('set-password');
+    }
+  } catch {
+    // The public site remains usable when Supabase has not been configured.
+  }
+}
+
 function setupNavigation() {
   const toggle = $('[data-menu-toggle]');
   const nav = $('[data-mobile-nav]');
@@ -914,31 +1017,249 @@ function setupAuth() {
   let mode = 'signin';
   const update = () => {
     const su = mode === 'signup';
-    $('[data-auth-title]', modal).textContent = su ? 'Create your account' : 'Welcome back';
-    $('[data-auth-copy]', modal).textContent = su ? 'Save watchlists and return to your research desk.' : 'Sign in to save watchlists and return to your research desk.';
+    const reset = mode === 'reset';
+    const recovery = mode === 'set-password';
+    $('[data-auth-title]', modal).textContent = su ? 'Create your account' : recovery ? 'Choose a new password' : reset ? 'Reset your password' : 'Welcome back';
+    $('[data-auth-copy]', modal).textContent = su
+      ? 'Save watchlists and return to your research desk.'
+      : recovery
+        ? 'Choose a new password for your Dyorly account.'
+        : reset
+          ? 'Enter your email and we will send a secure reset link.'
+          : 'Sign in to save watchlists and return to your research desk.';
     $('[data-name-field]', modal).hidden = !su;
-    $('[data-auth-submit]', modal).textContent = su ? 'Create account' : 'Sign in';
-    $('[data-auth-switch-copy]', modal).textContent = su ? 'Already have an account?' : 'New to Dyorly?';
-    $('[data-auth-switch]', modal).textContent = su ? 'Sign in' : 'Register';
+    $('[data-email-field]', modal).hidden = recovery;
+    $('[data-password-field]', modal).hidden = reset;
+    $('[data-confirm-password-field]', modal).hidden = !recovery;
+    $('input[type="email"]', modal).required = !recovery;
+    $('input[type="password"]', $('[data-password-field]', modal))?.toggleAttribute('required', !reset);
+    $('input[type="password"]', $('[data-confirm-password-field]', modal))?.toggleAttribute('required', recovery);
+    $('[data-auth-submit]', modal).textContent = su ? 'Create account' : recovery ? 'Save password' : reset ? 'Send reset link' : 'Sign in';
+    $('[data-auth-switch-copy]', modal).textContent = reset || recovery ? 'Remembered your password?' : su ? 'Already have an account?' : 'New to Dyorly?';
+    $('[data-auth-switch]', modal).textContent = reset || recovery ? 'Sign in' : su ? 'Sign in' : 'Register';
+    $('[data-forgot-password]', modal).hidden = su || reset || recovery;
   };
-  const open = (nextMode) => {
+  const open = (nextMode = 'signin') => {
     mode = nextMode;
     update();
     modal.hidden = false;
     document.body.classList.add('modal-open');
-    $('[data-auth-note]', modal).hidden = true;
+    const note = $('[data-auth-note]', modal);
+    note.hidden = true;
+    note.textContent = '';
+    $('[data-auth-form]', modal)?.reset();
   };
-  $$('[data-auth]').forEach((btn) => btn.addEventListener('click', () => open(btn.dataset.auth || 'signin')));
+  window.__dyorlyOpenAuth = open;
+  $$('[data-auth]').forEach((btn) => btn.addEventListener('click', async () => {
+    if (btn.dataset.auth === 'signout') {
+      const client = await getSupabase();
+      if (client) await client.auth.signOut();
+      return;
+    }
+    open(btn.dataset.auth || 'signin');
+  }));
   $('[data-close-auth]', modal)?.addEventListener('click', () => { modal.hidden = true; document.body.classList.remove('modal-open'); });
-  $('[data-auth-switch]', modal)?.addEventListener('click', () => { mode = mode === 'signin' ? 'signup' : 'signin'; update(); });
-  $('[data-auth-form]', modal)?.addEventListener('submit', (e) => { e.preventDefault(); $('[data-auth-note]', modal).hidden = false; });
+  $('[data-auth-switch]', modal)?.addEventListener('click', () => {
+    mode = mode === 'signin' ? 'signup' : 'signin';
+    update();
+  });
+  $('[data-forgot-password]', modal)?.addEventListener('click', () => {
+    mode = 'reset';
+    update();
+  });
+  $('[data-auth-form]', modal)?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const client = await getSupabase();
+    if (!client) {
+      showAuthNote('Authentication is not configured. Add the Supabase public environment variables before using accounts.', true);
+      return;
+    }
+    const form = event.currentTarget;
+    const email = $('input[type="email"]', form)?.value.trim();
+    const password = $('input[type="password"]', form)?.value || '';
+    const confirm = $('[data-confirm-password-field] input', form)?.value || '';
+    const username = $('[data-name-field] input', form)?.value.trim() || null;
+    try {
+      $('[data-auth-submit]', modal).disabled = true;
+      if (mode === 'signup') {
+        const result = await client.auth.signUp({
+          email,
+          password,
+          options: { data: { username }, emailRedirectTo: window.location.origin + window.location.pathname },
+        });
+        if (result.error) throw result.error;
+        showAuthNote(result.data.session ? 'Account created. Your watchlist is ready.' : 'Check your email to verify your account, then sign in.');
+      } else if (mode === 'reset') {
+        const result = await client.auth.resetPasswordForEmail(email, { redirectTo: window.location.href.split('#')[0] });
+        if (result.error) throw result.error;
+        showAuthNote('Reset link sent. Check your email to continue.');
+      } else if (mode === 'set-password') {
+        if (password.length < 6 || password !== confirm) throw new Error('Passwords must match and be at least 6 characters.');
+        const result = await client.auth.updateUser({ password });
+        if (result.error) throw result.error;
+        showAuthNote('Password updated. You can keep using Dyorly.');
+        history.replaceState({}, '', window.location.pathname + window.location.search);
+      } else {
+        const result = await client.auth.signInWithPassword({ email, password });
+        if (result.error) throw result.error;
+        modal.hidden = true;
+        document.body.classList.remove('modal-open');
+      }
+    } catch (error) {
+      showAuthNote(error instanceof Error ? error.message : 'Authentication failed. Try again.', true);
+    } finally {
+      $('[data-auth-submit]', modal).disabled = false;
+    }
+  });
   modal.addEventListener('click', (e) => { if (e.target === modal) { modal.hidden = true; document.body.classList.remove('modal-open'); } });
+}
+
+async function persistWalletAnalysis(address) {
+  const client = await getSupabase();
+  if (!_authSession || !client) return;
+  client.functions.invoke('analyze-wallet', { body: { wallet_address: address } }).catch(() => {});
+}
+
+function showWatchlistNote(message, isError = false) {
+  const note = $('[data-bot-link-note]');
+  if (!note) return;
+  note.textContent = message;
+  note.hidden = false;
+  note.classList.toggle('error', isError);
+}
+
+function renderWatchlist(items = [], profile = null) {
+  const target = $('[data-watchlist-items]');
+  if (!target) return;
+  const codeNote = $('[data-bot-link-note]');
+  if (codeNote) {
+    codeNote.textContent = profile?.bot_link_code ? `Future bot link code: ${profile.bot_link_code}` : '';
+    codeNote.hidden = !profile?.bot_link_code;
+  }
+  target.innerHTML = items.length ? items.map((item) => `
+    <article class="watchlist-row" data-watch-id="${escHtml(item.id)}">
+      <div class="watchlist-row-heading">
+        <div><b>${escHtml(item.token_symbol || 'Token')}</b><small>${escHtml(item.token_name || shortAddr(item.token_mint))}</small></div>
+        <button class="text-button red" type="button" data-remove-watch>Remove</button>
+      </div>
+      <span class="mono watchlist-mint">${escHtml(shortAddr(item.token_mint))} · watched at ${escHtml(money(item.market_cap_at_watch))}</span>
+      <div class="watchlist-settings">
+        <label><span>Alert up %</span><input type="number" min="0" step="1" value="${Number(item.alert_up_percent ?? 50)}" data-alert-up></label>
+        <label><span>Alert down %</span><input type="number" min="0" step="1" value="${Number(item.alert_down_percent ?? 20)}" data-alert-down></label>
+        <label class="watchlist-toggle"><input type="checkbox" ${item.alert_enabled ? 'checked' : ''} data-alert-enabled><span>Alerts enabled</span></label>
+        <button class="button button-ghost button-sm" type="button" data-save-watch>Save</button>
+      </div>
+    </article>
+  `).join('') : '<div class="empty-copy"><b>No watched tokens yet</b><span>Analyze a token and choose Watch token to save it here.</span></div>';
+  target.querySelectorAll('[data-remove-watch]').forEach((button) => button.addEventListener('click', async () => {
+    const row = button.closest('[data-watch-id]');
+    const client = await getSupabase();
+    if (!row || !client) return;
+    const result = await client.from('watchlists').delete().eq('id', row.dataset.watchId);
+    if (result.error) showWatchlistNote(result.error.message, true);
+    else row.remove();
+  }));
+  target.querySelectorAll('[data-save-watch]').forEach((button) => button.addEventListener('click', async () => {
+    const row = button.closest('[data-watch-id]');
+    const client = await getSupabase();
+    if (!row || !client) return;
+    const payload = {
+      alert_up_percent: Math.max(0, Number($('[data-alert-up]', row).value || 0)),
+      alert_down_percent: Math.max(0, Number($('[data-alert-down]', row).value || 0)),
+      alert_enabled: $('[data-alert-enabled]', row).checked,
+    };
+    const result = await client.from('watchlists').update(payload).eq('id', row.dataset.watchId);
+    if (result.error) showWatchlistNote(result.error.message, true);
+    else showWatchlistNote('Alert settings saved.');
+  }));
+}
+
+async function loadWatchlist() {
+  const client = await getSupabase();
+  if (!client || !_authSession) return;
+  const [watchlists, profile] = await Promise.all([
+    client.from('watchlists').select('*').eq('is_active', true).order('created_at', { ascending: false }),
+    client.from('profiles').select('bot_link_code').eq('id', _authSession.user.id).maybeSingle(),
+  ]);
+  if (watchlists.error) return showWatchlistNote(watchlists.error.message, true);
+  renderWatchlist(watchlists.data || [], profile.data);
+}
+
+async function openWatchlist() {
+  const client = await getSupabase();
+  if (!_authSession && client) {
+    const current = await client.auth.getSession();
+    _authSession = current.data.session;
+    updateHeaderAuth();
+  }
+  if (!_authSession) {
+    window.__dyorlyOpenAuth?.('signin');
+    return;
+  }
+  const modal = $('[data-watchlist-modal]');
+  if (!modal) return;
+  modal.hidden = false;
+  document.body.classList.add('modal-open');
+  await loadWatchlist();
+}
+
+async function watchCurrentToken() {
+  if (!_currentTokenData) return;
+  const client = await getSupabase();
+  if (!_authSession && client) {
+    const current = await client.auth.getSession();
+    _authSession = current.data.session;
+    updateHeaderAuth();
+  }
+  if (!_authSession) {
+    window.__dyorlyOpenAuth?.('signin');
+    return;
+  }
+  const button = $('[data-watch-token]');
+  if (!client || !button) return;
+  try {
+    button.disabled = true;
+    const result = await client.functions.invoke('watchlist-token', {
+      body: {
+        token_mint: _currentTokenData.address,
+        alert_enabled: true,
+        alert_up_percent: 50,
+        alert_down_percent: 20,
+      },
+    });
+    if (result.error) throw result.error;
+    button.textContent = 'Watching ✓';
+    await loadWatchlist();
+  } catch (error) {
+    showError(error instanceof Error ? error.message : 'The token could not be added to your watchlist.');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function setupWatchlist() {
+  $('[data-watch-token]')?.addEventListener('click', watchCurrentToken);
+  $$('[data-watchlist-trigger]').forEach((button) => button.addEventListener('click', openWatchlist));
+  const modal = $('[data-watchlist-modal]');
+  if (!modal) return;
+  $('[data-close-watchlist]', modal)?.addEventListener('click', () => {
+    modal.hidden = true;
+    document.body.classList.remove('modal-open');
+  });
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      modal.hidden = true;
+      document.body.classList.remove('modal-open');
+    }
+  });
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
   setupAuth();
+  setupWatchlist();
+  initSupabase();
   loadMarketStrip();
 
   $('[data-dismiss-error]')?.addEventListener('click', hideError);
