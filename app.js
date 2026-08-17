@@ -971,10 +971,50 @@ function showAuthNote(message, isError = false) {
   note.classList.toggle('error', isError);
 }
 
+function displayNameFor(session) {
+  if (!session?.user) return 'Account';
+  const meta = session.user.user_metadata || {};
+  if (meta.username) return String(meta.username);
+  if (session.user.email) return String(session.user.email).split('@')[0];
+  return 'Account';
+}
+
 function updateHeaderAuth() {
-  $$('.signin-button').forEach((button) => {
-    button.textContent = _authSession ? 'Sign out' : 'Sign in';
-    button.dataset.auth = _authSession ? 'signout' : 'signin';
+  const signedIn = Boolean(_authSession);
+  $$('[data-guest-only]').forEach((el) => { el.hidden = signedIn; });
+  $$('[data-member-only]').forEach((el) => { el.hidden = !signedIn; });
+  $$('[data-account-menu]').forEach((el) => { el.hidden = !signedIn; });
+
+  if (signedIn) {
+    const name = displayNameFor(_authSession);
+    $$('[data-account-username]').forEach((el) => { el.textContent = name; });
+    $$('[data-account-initial]').forEach((el) => { el.textContent = name.slice(0, 1).toUpperCase(); });
+  }
+}
+
+function setupAccountMenu() {
+  $$('[data-account-menu]').forEach((menu) => {
+    const toggle = $('[data-account-toggle]', menu);
+    const dropdown = $('[data-account-dropdown]', menu);
+    if (!toggle || !dropdown) return;
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = dropdown.hidden;
+      dropdown.hidden = !willOpen;
+      toggle.setAttribute('aria-expanded', String(willOpen));
+    });
+    dropdown.querySelectorAll('button').forEach((item) => item.addEventListener('click', () => {
+      dropdown.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
+    }));
+  });
+  document.addEventListener('click', (e) => {
+    $$('[data-account-dropdown]').forEach((dropdown) => {
+      if (!dropdown.hidden && !dropdown.parentElement.contains(e.target)) {
+        dropdown.hidden = true;
+        $('[data-account-toggle]', dropdown.parentElement)?.setAttribute('aria-expanded', 'false');
+      }
+    });
   });
 }
 
@@ -1125,7 +1165,7 @@ async function persistWalletAnalysis(address) {
 }
 
 function showWatchlistNote(message, isError = false) {
-  const note = $('[data-bot-link-note]');
+  const note = $('[data-watchlist-note]');
   if (!note) return;
   note.textContent = message;
   note.hidden = false;
@@ -1135,11 +1175,33 @@ function showWatchlistNote(message, isError = false) {
 function renderWatchlist(items = [], profile = null) {
   const target = $('[data-watchlist-items]');
   if (!target) return;
-  const codeNote = $('[data-bot-link-note]');
-  if (codeNote) {
-    codeNote.textContent = profile?.bot_link_code ? `Future bot link code: ${profile.bot_link_code}` : '';
-    codeNote.hidden = !profile?.bot_link_code;
+
+  const card = $('[data-bot-link-card]');
+  if (card) {
+    if (!profile?.bot_link_code) {
+      card.hidden = true;
+    } else {
+      card.hidden = false;
+      const linked = Boolean(profile.bot_linked);
+      card.innerHTML = `
+        <div class="bot-link-head">
+          <span class="metric-label">Telegram alerts</span>
+          <span class="bot-link-status ${linked ? 'linked' : ''}">${linked ? `${IC.check} Linked${profile.telegram_username ? ` as @${escHtml(profile.telegram_username)}` : ''}` : 'Not linked yet'}</span>
+        </div>
+        <p class="muted-copy">${linked
+          ? 'You\u2019ll get price moves, target market cap hits, and DEX-paid alerts here for tokens on your watchlist.'
+          : 'Message the Dyorly Telegram bot and send this code to start getting price, target market cap, and DEX-paid alerts for your watchlist.'}</p>
+        ${linked ? '' : `
+          <div class="bot-link-code-row">
+            <code class="mono" data-bot-code>${escHtml(profile.bot_link_code)}</code>
+            <button class="icon-action" type="button" data-copy-addr="${escHtml(profile.bot_link_code)}" title="Copy code">${IC.copy}</button>
+          </div>
+        `}
+      `;
+      bindCopyButtons(card);
+    }
   }
+
   target.innerHTML = items.length ? items.map((item) => `
     <article class="watchlist-row" data-watch-id="${escHtml(item.id)}">
       <div class="watchlist-row-heading">
@@ -1183,7 +1245,7 @@ async function loadWatchlist() {
   if (!client || !_authSession) return;
   const [watchlists, profile] = await Promise.all([
     client.from('watchlists').select('*').eq('is_active', true).order('created_at', { ascending: false }),
-    client.from('profiles').select('bot_link_code').eq('id', _authSession.user.id).maybeSingle(),
+    client.from('profiles').select('bot_link_code, bot_linked, telegram_username').eq('id', _authSession.user.id).maybeSingle(),
   ]);
   if (watchlists.error) return showWatchlistNote(watchlists.error.message, true);
   renderWatchlist(watchlists.data || [], profile.data);
@@ -1262,6 +1324,7 @@ function setupWatchlist() {
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
   setupAuth();
+  setupAccountMenu();
   setupWatchlist();
   initSupabase();
   loadMarketStrip();
