@@ -670,7 +670,7 @@ function startRefreshCooldown() {
 
 // ─── Token analysis render ────────────────────────────────────────────────────
 function renderAnalysis(data) {
-  const { token, liquidity, holders, topTraders, earlyBuyers, developer, monitoring } = data;
+  const { token, liquidity, holders, topTraders, earlyBuyers, monitoring } = data;
   const analysis = $('[data-analysis]');
   if (!analysis) return;
   analysis.hidden = false;
@@ -746,11 +746,7 @@ function renderAnalysis(data) {
   // DEX intel
   renderDexIntel(data);
 
-  // Developer
-  setText('[data-developer-address]', developer.address ? shortAddr(developer.address) : 'Not returned by provider');
-  setText('[data-developer-risk]', `${developer.risk.toUpperCase()} RISK`);
-  setText('[data-authority-share]', pct(developer.balancePercentage));
-  setText('[data-developer-source]', developer.source);
+  // Developer section removed per request — no longer rendered.
 
   // Holders
   setText('[data-holder-total]', holders.totalKnown ? `${count(holders.totalKnown)} total holders` : 'provider snapshot');
