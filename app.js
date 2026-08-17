@@ -414,19 +414,21 @@ function renderDexIntel(data) {
   if (!el) return;
   const { monitoring, dexBoosts, token } = data;
 
-  const hasPaid = monitoring.paidOrders;
+  const paidStatus = monitoring.paidStatus || (monitoring.paidOrders === null ? 'unknown' : monitoring.paidOrders ? 'paid' : 'not_paid');
+  const hasPaid = paidStatus === 'paid';
   const hasBoost = dexBoosts && dexBoosts.active > 0;
   const orderTypes = (monitoring.paidOrderTypes || []).filter(Boolean);
+  const paidLabel = { paid: 'Paid profile', pending: 'Paid order pending', not_paid: 'No paid order found', unknown: 'Status unavailable' }[paidStatus];
 
   el.innerHTML = `
     <article class="dex-intel-card ${hasPaid ? 'active' : ''}">
       <div class="dex-intel-icon ${hasPaid ? 'lime-bg' : ''}">${IC.paid}</div>
       <div>
         <span class="metric-label">DEX Paid</span>
-        <strong>${hasPaid ? 'Paid profile' : 'No paid order found'}</strong>
-        ${orderTypes.length ? `<span class="metric-detail">${escHtml(orderTypes.join(', '))}</span>` : '<span class="metric-detail">Checked against DexScreener orders</span>'}
+        <strong>${paidLabel}</strong>
+        ${orderTypes.length ? `<span class="metric-detail">${escHtml(orderTypes.join(', '))}</span>` : `<span class="metric-detail">${paidStatus === 'unknown' ? 'Could not reach DexScreener orders' : 'Checked against DexScreener orders'}</span>`}
       </div>
-      ${hasPaid ? `<span class="dex-badge lime-badge">PAID</span>` : ''}
+      ${hasPaid ? `<span class="dex-badge lime-badge">PAID</span>` : paidStatus === 'pending' ? `<span class="dex-badge orange-badge">PENDING</span>` : ''}
     </article>
 
     <article class="dex-intel-card ${hasBoost ? 'boost-active' : ''}">
@@ -793,13 +795,19 @@ async function analyzeToken(value) {
   setLoading(true);
   _lastAnalyzedValue = value;
   try {
-    const res = await fetch(`/api/token?${new URLSearchParams({ address: value.trim() || SAMPLE_TOKEN })}`, {
-      headers: { Accept: 'application/json' },
-    });
-    const ct = res.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) throw new Error(`The analysis service returned a non-JSON response (${res.status}).`);
-    const body = await res.json();
-    if (!res.ok) throw new Error(body.error || 'The token analysis could not be loaded.');
+    const target = value.trim() || SAMPLE_TOKEN;
+    let body;
+    if (window.DyorlyTokenClient) {
+      body = await window.DyorlyTokenClient.analyze(target);
+    } else {
+      const res = await fetch(`/api/token?${new URLSearchParams({ address: target })}`, {
+        headers: { Accept: 'application/json' },
+      });
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) throw new Error(`The analysis service returned a non-JSON response (${res.status}).`);
+      body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'The token analysis could not be loaded.');
+    }
     renderAnalysis(body);
   } catch (err) {
     showError(err instanceof Error ? err.message : 'The token analysis could not be loaded.');
