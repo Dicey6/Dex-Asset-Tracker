@@ -370,6 +370,20 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
 .text-button.red{color:#ff8b8b}
 .wallet-flow-head,.wallet-flow-row,.wallet-swap-head,.wallet-swap-row{grid-template-columns:58px 1fr 1fr 1.2fr 90px}
 .wallet-pnl-grid{margin-bottom:17px}
+.wallet-overview-card{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin:24px 0 36px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--line)}
+.wallet-overview-card>div{display:grid;gap:7px;min-height:118px;padding:20px;background:rgba(17,22,31,.88)}
+.wallet-overview-card strong{font-size:26px;letter-spacing:-.04em;color:#f0f4f8}
+.wallet-overview-card small{color:#758395;font-size:11px;line-height:1.45}
+.wallet-classification{color:var(--lime)!important}
+.wallet-stat-grid{grid-template-columns:repeat(3,1fr)}
+.wallet-stat-grid .metric-card{min-height:112px}
+.wallet-performance-card{padding:20px}
+.wallet-performance-card .flow-grid{grid-template-columns:repeat(3,1fr)}
+.wallet-provider-pills{margin-top:14px}
+.activity-type{min-width:72px;text-align:center;font:700 10px "Space Mono",monospace;letter-spacing:.08em;color:var(--blue)}
+.activity-type.buy,.activity-type.swap{color:var(--lime)}
+.activity-type.sell{color:var(--red)}
+.activity-type.transfer{color:#f0b45a}
 
 /* ── Hidden states ───────────────────────────────────────────────────────── */
 .analysis-section[hidden],.error-wrap[hidden],[hidden]{display:none!important}
@@ -388,6 +402,9 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
   .scan-card{max-width:600px}
   .overview-grid{grid-template-columns:1fr 1fr}
   .metric-card.large{grid-column:span 2}
+  .wallet-stat-grid{grid-template-columns:1fr 1fr}
+  .wallet-overview-card{grid-template-columns:1fr 1fr}
+  .wallet-overview-card>div:last-child{grid-column:span 2}
   .analysis-columns{grid-template-columns:1fr;gap:0}
   .monitor-grid{grid-template-columns:1fr 1fr}
   .monitor-grid .metric-card:last-child{grid-column:span 2}
@@ -434,6 +451,9 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
   .analysis-kicker{flex-wrap:wrap;line-height:1.5}
   .asset-heading h2{font-size:20px}
   .overview-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .wallet-stat-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .wallet-overview-card{grid-template-columns:1fr;gap:1px}
+  .wallet-overview-card>div:last-child{grid-column:auto}
   .metric-card{padding:13px}
   .metric-card.large{grid-column:span 2}
   .metric-card strong{font-size:17px}

@@ -819,6 +819,33 @@ async function analyzeToken(value) {
 }
 
 // ─── Wallet analysis ─────────────────────────────────────────────────────────
+function classifyWallet(data) {
+  const swaps = Array.isArray(data.swaps) ? data.swaps : [];
+  const portfolio = data.portfolio || {};
+  const value = Number(portfolio.totalValueUsd) || 0;
+  const tradeCount = swaps.length;
+  const volume = swaps.reduce((sum, swap) => sum + (Number(swap.volumeUsd) || 0), 0);
+  if (tradeCount >= 20) {
+    return {
+      label: 'Active Trader',
+      reason: `${tradeCount} indexed swaps and ${money(volume)} in tracked volume.`,
+      score: Math.min(98, 64 + Math.round(Math.min(tradeCount, 40) * 0.6) + (value > 10000 ? 8 : 0)),
+    };
+  }
+  if (value >= 10000) {
+    return {
+      label: 'Portfolio Holder',
+      reason: `${money(value)} in current indexed holdings with a measured trading footprint.`,
+      score: 78,
+    };
+  }
+  return {
+    label: 'Emerging Wallet',
+    reason: tradeCount ? `${tradeCount} indexed swap${tradeCount === 1 ? '' : 's'} returned for this wallet.` : 'Not enough indexed activity for a stronger label.',
+    score: 60,
+  };
+}
+
 function renderWalletAnalysis(data) {
   const section = $('[data-wallet-analysis]');
   if (!section) return;
@@ -829,6 +856,8 @@ function renderWalletAnalysis(data) {
   setHref('[data-wallet-solscan]', `https://solscan.io/account/${data.address}`);
 
   const { portfolio, holdings, activity, transfers = [], swaps = [], pnl, signals } = data;
+  const classification = classifyWallet(data);
+  const totalVolume = swaps.reduce((sum, swap) => sum + (Number(swap.volumeUsd) || 0), 0);
 
   setText('[data-wallet-total]', money(portfolio.totalValueUsd));
   setText('[data-wallet-token-count]', `${portfolio.tokenCount} token${portfolio.tokenCount !== 1 ? 's' : ''} held${portfolio.nftCount ? ` · ${portfolio.nftCount} NFTs` : ''}`);
@@ -836,6 +865,13 @@ function renderWalletAnalysis(data) {
   setText('[data-wallet-sol-usd]', 'Native balance');
   setText('[data-wallet-risk]', signals.risk === 'unknown' ? '—' : signals.risk.toUpperCase());
   setText('[data-wallet-top-share]', signals.topHoldingPercentage !== null ? `Top holding is ${signals.topHoldingPercentage.toFixed(1)}% of portfolio` : 'Concentration not calculated');
+  setText('[data-wallet-score]', `${classification.score}/100`);
+  setText('[data-wallet-classification]', classification.label);
+  setText('[data-wallet-classification-reason]', classification.reason);
+  setText('[data-wallet-realized]', pnl ? money(pnl.realizedUsd) : '—');
+  setText('[data-wallet-unrealized]', pnl ? money(pnl.unrealizedUsd) : '—');
+  setText('[data-wallet-trades]', swaps.length ? count(swaps.length) : '—');
+  setText('[data-wallet-volume]', totalVolume ? money(totalVolume) : '—');
 
   // Holdings table
   const holdingsEl = $('[data-wallet-holdings]');
@@ -870,16 +906,19 @@ function renderWalletAnalysis(data) {
   // Activity
   const activityEl = $('[data-wallet-activity]');
   if (activityEl) {
-    activityEl.innerHTML = activity.length ? activity.map((a) => `
+    activityEl.innerHTML = activity.length ? activity.map((a) => {
+      const rawType = String(a.type || '').toLowerCase();
+      const type = rawType.includes('swap') ? 'SWAP' : rawType.includes('transfer') ? 'TRANSFER' : rawType.includes('buy') ? 'BUY' : rawType.includes('sell') ? 'SELL' : 'ACTIVITY';
+      return `
       <div class="activity-row">
-        <span class="activity-type">${escHtml(a.type)}</span>
+        <span class="activity-type ${type.toLowerCase()}">${type}</span>
         <span class="mono activity-desc">${escHtml(a.description.length > 60 ? `${a.description.slice(0, 60)}…` : a.description)}</span>
-        <span class="mono time-cell">${IC.clock} ${escHtml(a.timestamp ? isoDate(a.timestamp) : '—')}</span>
+        <span class="mono time-cell">${IC.clock} ${escHtml(a.timestamp ? relativeTime(Math.floor(new Date(a.timestamp).getTime() / 1000)) : '—')}</span>
         <span class="row-actions">
           <a class="icon-action" href="https://solscan.io/tx/${escHtml(a.signature)}" target="_blank" rel="noreferrer" title="View transaction">${IC.ext}</a>
         </span>
       </div>
-    `).join('') : '<div class="empty-copy"><b>No recent activity</b><span>Transaction history needs a Solscan key or the wallet has no indexed activity.</span></div>';
+    `}).join('') : '<div class="empty-copy"><b>No recent activity</b><span>Transaction history needs a Solscan key or the wallet has no indexed activity.</span></div>';
   }
 
   const transfersEl = $('[data-wallet-transfers]');
