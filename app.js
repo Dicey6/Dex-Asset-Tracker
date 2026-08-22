@@ -57,6 +57,7 @@ function safeUrl(v) {
 }
 
 function shortAddr(addr) {
+  if (addr === 'So11111111111111111111111111111111111111112') return 'SOL';
   return addr && addr.length > 12 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr || '—';
 }
 
@@ -762,6 +763,11 @@ function renderAnalysis(data) {
   setText('[data-monitoring-coverage]', monitoring.paidOrders === null ? 'limited coverage' : 'live checks');
   setText('[data-paid-orders]', monitoring.paidOrders === null ? '—' : monitoring.paidOrders ? 'Paid order active' : 'No paid order found');
   setText('[data-boosts]', monitoring.boosts === null ? '—' : monitoring.boosts > 0 ? `${monitoring.boosts} active` : 'None');
+  const rug = monitoring.rugCheck;
+  setText('[data-rugcheck-status]', rug ? (rug.rugged ? 'Rugged flag' : rug.riskCount ? `${rug.riskCount} risk${rug.riskCount === 1 ? '' : 's'} found` : 'No risks flagged') : 'Unavailable');
+  setText('[data-rugcheck-score]', rug?.score !== null && rug?.score !== undefined ? Number(rug.score).toFixed(2) : '—');
+  setText('[data-rugcheck-risks]', rug ? (rug.riskCount ? 'Review the flagged items before trading.' : 'RugCheck returned no flagged risks.') : 'RugCheck could not be reached.');
+  setHref('[data-rugcheck-link]', `https://rugcheck.xyz/tokens/${data.address}`);
   renderWarnings(monitoring.warnings);
 
   const paidTypesEl = $('[data-paid-order-types]');
@@ -849,7 +855,7 @@ function renderWalletAnalysis(data) {
           </span>
           <span class="mono">${h.balance !== null ? escHtml(count(h.balance)) : '—'}</span>
           <span class="mono">${escHtml(money(h.valueUsd))}</span>
-          <b>${share !== null ? escHtml(pct(share, false)) : '—'}</b>
+           <span class="holding-share">${share !== null ? `<b>${escHtml(pct(share, false))}</b><i style="width:${Math.min(100, Math.max(0, share)).toFixed(1)}%"></i>` : '<b>—</b>'}</span>
           <span class="row-actions">
             ${h.address ? `<button class="icon-action" data-copy-addr="${escHtml(h.address)}" title="Copy token address">${IC.copy}</button>
             <a class="icon-action" href="/token.html?address=${escHtml(h.address)}" title="Analyze this token">${IC.boost}</a>

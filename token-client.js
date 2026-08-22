@@ -30,6 +30,7 @@
   const HELIUS_RPC = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
   const DEX = 'https://api.dexscreener.com';
   const BIRDEYE = 'https://public-api.birdeye.so';
+  const RUGCHECK = 'https://api.rugcheck.xyz/v1';
 
   // ─── Small fetch helpers (mirrors api/_shared.ts behavior) ─────────────────
   function firstNumber(...values) {
@@ -176,6 +177,20 @@
     );
   }
 
+  async function rugCheckReport(address) {
+    const report = await fetchJson(`${RUGCHECK}/tokens/${encodeURIComponent(address)}/report`, {}, 12000);
+    const risks = asArray(report.risks);
+    return {
+      score: firstNumber(report.score_normalised, report.scoreNormalized, report.score),
+      riskCount: risks.length,
+      rugged: report.rugged === true,
+      risks: risks.map((risk) => ({
+        name: String(risk.name ?? risk.description ?? risk.kind ?? 'Risk signal'),
+        level: String(risk.level ?? risk.severity ?? 'unknown'),
+      })),
+    };
+  }
+
   function normalizeTrader(row) {
     const address = String(row.address ?? row.owner ?? '').trim();
     if (!address) return null;
@@ -212,7 +227,7 @@
 
     const address = String(pair.baseToken?.address ?? value);
 
-    const [mintInfoResult, holdersResult, paidResult, tradersResult] = await Promise.all([
+    const [mintInfoResult, holdersResult, paidResult, tradersResult, rugCheckResult] = await Promise.all([
       optionalProvider(() => getMintInfo(address)),
       optionalProvider(async () => {
         const mint = await getMintInfo(address);
@@ -220,6 +235,7 @@
       }),
       optionalProvider(() => dexPaidStatus('solana', address)),
       optionalProvider(() => birdeyeTopTraders(address)),
+      optionalProvider(() => rugCheckReport(address)),
     ]);
 
     const priceUsd = firstNumber(pair.priceUsd);
@@ -269,6 +285,7 @@
       { name: 'DexScreener', configured: true, available: true },
       { name: 'Solana RPC (Helius)', configured: true, available: Boolean(holdersResult.value), message: holdersResult.error },
       { name: 'Birdeye', configured: true, available: Boolean(tradersResult.value), message: tradersResult.error },
+      { name: 'RugCheck', configured: true, available: Boolean(rugCheckResult.value), message: rugCheckResult.error },
     ];
 
     return {
@@ -307,6 +324,7 @@
         paidOrderTypes: paid?.types ?? [],
         paidStatus: paid?.state ?? 'unknown', // 'paid' | 'pending' | 'not_paid' | 'unknown'
         warnings,
+        rugCheck: rugCheckResult.value ?? null,
       },
       providers,
     };

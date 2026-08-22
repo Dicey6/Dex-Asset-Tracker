@@ -507,6 +507,22 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
 .source-card{border:1px solid var(--line);border-radius:11px;padding:16px;display:flex;flex-direction:column;gap:6px}
 .source-card b{font-size:13px;color:#e7edf5}
 .source-card span{font-size:11px;color:#6d7b8c;line-height:1.5}
+.future-section{margin-top:64px}
+.future-card{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:28px;border:1px solid rgba(193,245,110,.2);border-radius:15px;background:linear-gradient(110deg,rgba(193,245,110,.09),rgba(155,201,255,.05))}
+.future-copy{max-width:670px}
+.future-copy h2{font-size:clamp(25px,3vw,38px);letter-spacing:-.045em;margin:8px 0 10px}
+.future-copy p{color:#9aa6b5;line-height:1.6;font-size:14px;margin:0}
+.future-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.platform-pill{border:1px solid rgba(193,245,110,.25);border-radius:999px;padding:8px 11px;color:var(--lime);font:10px "Space Mono",monospace;white-space:nowrap}
+.community-section{margin-top:64px;margin-bottom:72px}
+.community-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+.community-card{display:flex;align-items:center;gap:13px;padding:18px;border:1px solid var(--line);border-radius:12px;background:rgba(149,170,194,.025);transition:border-color .18s,transform .18s}
+.community-card:hover{border-color:rgba(155,201,255,.4);transform:translateY(-2px)}
+.community-icon{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:#1d2733;color:var(--blue);font-size:18px}
+.community-card b,.community-card small{display:block}
+.community-card b{font:12px "Space Mono",monospace;color:#eef2f5}
+.community-card small{font-size:11px;color:#718092;margin-top:4px}
+.community-arrow{margin-left:auto;color:#718092;font-size:18px}
 
 /* ── Token page ──────────────────────────────────────────────────────────── */
 .token-search-bar{margin-top:20px}
@@ -550,11 +566,24 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
 .token-cell b{color:#e7edf5;font-size:12px}
 .token-cell small{color:#5e6b7b;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .token-mini-logo{width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.holding-share{display:flex;align-items:center;gap:8px;min-width:0}
+.holding-share b{min-width:42px}
+.holding-share i{display:block;width:38px;height:5px;border-radius:5px;background:var(--blue);opacity:.7}
 .activity-row{display:grid;grid-template-columns:110px 1fr 130px 50px;gap:10px;align-items:center;padding:11px 16px;font-size:11px;border-bottom:1px solid var(--line)}
 .activity-row:last-child{border-bottom:0}
 .activity-row:hover{background:rgba(149,170,194,.03)}
 .activity-type{color:var(--blue);font-weight:600;text-transform:capitalize;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .activity-desc{color:#8491a1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wallet-reading-guide{display:flex;gap:12px;align-items:flex-start;margin-top:14px;padding:14px 16px;border:1px solid rgba(155,201,255,.16);border-radius:10px;background:rgba(155,201,255,.045)}
+.wallet-guide-mark{width:22px;height:22px;border:1px solid rgba(155,201,255,.35);border-radius:50%;display:grid;place-items:center;color:var(--blue);font:700 12px "Space Mono",monospace;flex-shrink:0}
+.wallet-reading-guide b{font-size:12px;color:#dce7f4}
+.wallet-reading-guide p{margin:5px 0 0;color:#8290a0;font-size:11px;line-height:1.55}
+.metric-card-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.external-mini-link{font:10px "Space Mono",monospace;color:var(--blue)}
+.external-mini-link:hover{text-decoration:underline}
+.rugcheck-card{background:linear-gradient(140deg,rgba(193,245,110,.055),rgba(17,21,30,.76))}
+.rugcheck-score{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);margin-top:15px;padding-top:10px;color:#718092;font-size:10px}
+.rugcheck-score b{color:var(--lime);font:700 12px "Space Mono",monospace}
 
 /* ── Responsive additions ────────────────────────────────────────────────── */
 @media(max-width:920px){
@@ -580,4 +609,7 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0}
   .holder-table-head.wallet-holdings-head,.holder-row.wallet-holdings-row{grid-template-columns:30px 1fr 90px 70px}
   .holder-table-head.wallet-holdings-head span:nth-child(3),.holder-row.wallet-holdings-row span.mono:nth-of-type(1){display:none}
   .holder-table-head.wallet-holdings-head span:nth-child(6),.holder-row.wallet-holdings-row .row-actions{display:none}
+  .future-card{align-items:flex-start;flex-direction:column;padding:22px}
+  .future-actions{justify-content:flex-start}
+  .community-grid{grid-template-columns:1fr}
 }
