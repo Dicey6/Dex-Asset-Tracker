@@ -1,0 +1,1020 @@
+Dyorly — Full Backend & API Integration Instructions
+
+I have the following APIs already configured in my project:
+
+- Birdeye API key — already in ".env"
+- Helius API key — already in ".env"
+- Solscan API key — already in ".env"
+- DexScreener — already hardcoded/configured in the project
+
+I am using normal HTML, CSS and JavaScript for the frontend.
+
+I do NOT want the frontend converted to React, Next.js, Vue, or another frontend framework.
+
+The project currently does not have a backend, so build the backend as part of this implementation.
+
+Use:
+
+- Vanilla HTML/CSS/JavaScript → frontend
+- Python + FastAPI → backend
+- Render → FastAPI hosting
+- Supabase → database + authentication
+- Helius → Solana/on-chain analytics
+- Birdeye → market/trading analytics
+- Solscan → blockchain verification/research
+- DexScreener → DEX/token enrichment
+- Telegram Bot API → future watchlist alerts
+
+---
+
+1. Overall Architecture
+
+Build the project using this architecture:
+
+                         USER
+                           │
+                           ▼
+                  Dyorly Frontend
+                 HTML/CSS/JavaScript
+                           │
+                           │ HTTPS
+                           ▼
+                  FastAPI Backend
+                       Render
+                           │
+             ┌─────────────┼─────────────┐
+             │             │             │
+             ▼             ▼             ▼
+          Helius        Birdeye       Solscan
+             │             │             │
+             └─────────────┼─────────────┘
+                           │
+                     DexScreener
+                           │
+                           ▼
+                       Supabase
+                    ┌──────┴──────┐
+                    │             │
+                PostgreSQL      Auth
+
+The frontend will eventually be hosted on Vercel.
+
+The FastAPI backend will be hosted on Render.
+
+Supabase will provide the database and authentication.
+
+The frontend communicates with FastAPI through normal HTTPS API requests.
+
+Vercel does NOT need a special integration with Render.
+
+For example:
+
+Dyorly frontend
+      ↓
+https://api.dyorly.com/api/tokens/analyze
+      ↓
+FastAPI on Render
+      ↓
+Helius / Birdeye / Solscan / DexScreener
+      ↓
+FastAPI normalizes the data
+      ↓
+Frontend receives JSON
+
+---
+
+2. Frontend
+
+Keep the current frontend as:
+
+- HTML
+- CSS
+- Vanilla JavaScript
+
+Do not migrate the frontend to another framework.
+
+The frontend should never contain:
+
+- Helius API key
+- Birdeye API key
+- Solscan API key
+- Supabase service-role key
+- Telegram bot token
+- Any other private server credential
+
+The frontend only communicates with our FastAPI API.
+
+Use an environment/configurable API base URL rather than scattering the Render URL throughout the JavaScript.
+
+For example:
+
+https://api.dyorly.com
+
+Development can point to:
+
+http://localhost:8000
+
+Production can point to the Render/custom API domain.
+
+---
+
+3. Backend
+
+Create a Python FastAPI backend.
+
+Use:
+
+- Python 3.12+
+- FastAPI
+- Uvicorn
+- httpx
+- Pydantic
+- Supabase Python client where appropriate
+
+The backend should be responsible for:
+
+- Receiving requests from the frontend
+- Validating token CAs
+- Validating wallet addresses
+- Calling external APIs
+- Combining API responses
+- Normalizing data
+- Calculating derived analytics where necessary
+- Caching data
+- Authentication verification
+- Watchlist management
+- Monitoring
+- Telegram alerts
+- Database operations
+
+Do not expose provider APIs directly to the browser.
+
+---
+
+4. Backend Structure
+
+Create a clean structure similar to:
+
+backend/
+├── main.py
+├── config.py
+├── dependencies.py
+│
+├── routes/
+│   ├── tokens.py
+│   ├── wallets.py
+│   ├── auth.py
+│   ├── watchlist.py
+│   └── alerts.py
+│
+├── services/
+│   ├── helius.py
+│   ├── birdeye.py
+│   ├── solscan.py
+│   ├── dexscreener.py
+│   ├── token_analyzer.py
+│   ├── wallet_analyzer.py
+│   ├── monitoring.py
+│   └── cache.py
+│
+├── models/
+│   ├── token.py
+│   ├── wallet.py
+│   └── watchlist.py
+│
+└── utils/
+    ├── validation.py
+    └── solscan_links.py
+
+Adapt this to the existing project structure rather than blindly creating duplicates.
+
+---
+
+5. Environment Variables
+
+The following already exist in ".env":
+
+HELIUS_API_KEY=
+BIRDEYE_API_KEY=
+SOLSCAN_API_KEY=
+
+Keep the existing variable names if they are already different.
+
+Add Supabase configuration:
+
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+The service-role key is strictly server-side.
+
+Never expose it to the frontend.
+
+Do not commit ".env".
+
+Create/update ".env.example" with variable names only.
+
+---
+
+6. Supabase
+
+Use Supabase for:
+
+Authentication
+
+Implement:
+
+- Sign up
+- Login
+- Logout
+- Email/password authentication
+- Session handling
+- Authenticated requests
+
+Database
+
+Create tables for at least:
+
+profiles
+
+- id
+- email
+- created_at
+- updated_at
+
+watchlists
+
+- id
+- user_id
+- token_ca
+- token_name
+- token_symbol
+- added_at
+- alert_threshold
+- last_known_price
+- monitoring_enabled
+
+Default alert threshold:
+
+20%
+
+bot_connections
+
+- id
+- user_id
+- Telegram chat/connection identifier
+- status
+- created_at
+- updated_at
+
+token_cache
+
+- token_ca
+- normalized_data
+- updated_at
+
+token_activity
+
+Store useful monitoring/activity data where required.
+
+platform_stats
+
+Store:
+
+- total fees
+- total claimed fees
+- updated_at
+
+Implement proper foreign keys and timestamps.
+
+Use Supabase Row Level Security so users can only access their own private data.
+
+---
+
+7. Helius Integration
+
+Helius is the primary on-chain data source.
+
+Use Helius for:
+
+- Solana RPC
+- Token information
+- Token accounts
+- Wallet balances
+- Wallet transaction history
+- Parsed transactions
+- Token transfers
+- SOL transfers
+- Swap transactions
+- Transaction timestamps
+- Early buyer discovery
+- First 10 buyers
+- Developer wallet history
+- Wallet relationships
+- Wallet funding relationships
+- On-chain verification
+- Real-time/webhook functionality where appropriate
+
+Helius should answer:
+
+«What actually happened on-chain?»
+
+Use it as the primary source for transaction evidence.
+
+---
+
+8. Birdeye Integration
+
+Birdeye is the primary market and trading analytics source.
+
+Use Birdeye for:
+
+- Current price
+- Market cap
+- Liquidity
+- Volume
+- Historical price
+- OHLCV
+- Token trades
+- Buys
+- Sells
+- Buy volume
+- Sell volume
+- Buyers
+- Sellers
+- Token holders
+- Holder positions
+- Wallet positions
+- Trading history
+- Realized PnL
+- Unrealized PnL
+- Total PnL
+- Trader analytics
+
+Whenever Birdeye already provides a metric, use its data rather than unnecessarily recreating the metric.
+
+---
+
+9. Solscan Integration
+
+Use Solscan as a secondary blockchain data/verification provider.
+
+Use it for:
+
+- Holder information
+- Wallet information
+- Transaction information
+- Additional blockchain verification
+- Token information where useful
+
+Do not duplicate every Helius request through Solscan.
+
+Solscan should mainly act as:
+
+Verification + additional data + research
+
+Also generate clickable Solscan links for wallets and transactions.
+
+The Solscan API itself is NOT required just to generate links.
+
+---
+
+10. DexScreener Integration
+
+DexScreener is already configured/hardcoded.
+
+Use it for:
+
+- Token pairs
+- DEX information
+- Pair information
+- Liquidity
+- Volume
+- Price information
+- Price changes
+- Token profiles
+- Website
+- X/social links
+- Boost information
+- Paid/promotional information where available
+- DEX/pair discovery
+
+Use DexScreener as an enrichment and cross-checking source.
+
+Do not make it the only source of truth.
+
+---
+
+11. Token Analysis Endpoint
+
+Create:
+
+POST /api/tokens/analyze
+
+The frontend sends:
+
+{
+  "ca": "TOKEN_CA"
+}
+
+The backend then:
+
+1. Validate the CA.
+2. Query the required APIs.
+3. Retrieve token metadata.
+4. Retrieve market data.
+5. Retrieve trading data.
+6. Retrieve holders.
+7. Identify early buyers.
+8. Analyze relevant wallets.
+9. Identify developer information where possible.
+10. Retrieve DEX information.
+11. Normalize all responses.
+12. Return one clean Dyorly analytics response.
+
+The frontend should not need to know which provider supplied each individual field.
+
+---
+
+12. Normalized Token Response
+
+Create a consistent internal response such as:
+
+token
+├── address
+├── name
+├── symbol
+├── logo
+├── banner
+├── description
+├── socials
+├── website
+├── launchpad
+├── age
+├── migrated
+├── boosted
+└── dex
+
+market
+├── price
+├── market_cap
+├── liquidity
+├── volume
+├── ath
+├── price_change
+├── buys
+├── sells
+├── buy_volume
+├── sell_volume
+├── buyers
+└── sellers
+
+buyers
+├── first_10
+└── relationships
+
+holders
+└── top_holders
+
+developer
+├── wallet
+├── holdings
+├── sold
+├── pnl
+├── history
+└── related_wallets
+
+charts
+├── price
+├── volume
+├── liquidity
+└── activity
+
+Use "null" when information is unavailable.
+
+Never fabricate missing information.
+
+---
+
+13. First 10 Buyers
+
+Identify the earliest 10 relevant buyers.
+
+For each:
+
+- Wallet address
+- First buy timestamp
+- Initial purchase amount
+- Current holdings
+- Percentage of supply
+- Amount sold
+- Remaining position
+- Realized PnL
+- Unrealized PnL
+- Total PnL
+- Relevant transactions
+- Solscan wallet link
+- Solscan transaction links
+
+Use:
+
+Helius → transaction history
+
+Birdeye → trading/position/PnL data
+
+---
+
+14. Wallet Relationships
+
+For the first 10 buyers, investigate whether they interacted before or after purchasing the token.
+
+Check:
+
+- Wallet-to-wallet transactions
+- SOL transfers
+- Token transfers
+- Funding relationships
+- Transaction timestamps
+- Relevant transaction history
+
+Use Helius as the primary source.
+
+Do not automatically label two wallets as being controlled by the same person merely because they interacted.
+
+Return evidence and relationships rather than unsupported conclusions.
+
+---
+
+15. Developer Wallet Analysis
+
+Attempt to identify the relevant creator/developer wallet from on-chain data.
+
+Once identified, analyze:
+
+- Wallet history
+- Token creation/deployment activity
+- Token holdings
+- Token transfers
+- Buys
+- Sells
+- Amount sold
+- Remaining holdings
+- PnL where available
+- Funding source
+- Wallets funded by the developer
+- Wallets that funded the developer
+- Interactions with early buyers
+- Transaction timestamps
+
+Use:
+
+Helius → on-chain history
+
+Birdeye → trading/PnL
+
+Solscan → verification/research
+
+Never claim a wallet is definitely the developer without sufficient evidence.
+
+---
+
+16. Top Holder Analysis
+
+Retrieve the largest token holders.
+
+For each:
+
+- Wallet address
+- Percentage of supply
+- Current holdings
+- Amount purchased
+- Amount sold
+- Realized PnL
+- Unrealized PnL
+- Total PnL
+- Relevant activity
+- Solscan link
+
+---
+
+17. Charts
+
+Do not add another API just for charts.
+
+Use:
+
+Birdeye → market/price historical data
+
+Helius → on-chain activity
+
+Create an endpoint:
+
+GET /api/tokens/{ca}/chart
+
+Return normalized time-series data for:
+
+- Price
+- Market cap
+- Volume
+- Liquidity where available
+- Buy/sell activity
+- Wallet activity where applicable
+
+The frontend can render these using a lightweight JavaScript charting library.
+
+---
+
+18. Wallet Analyzer
+
+Create:
+
+GET /api/wallets/{address}
+GET /api/wallets/{address}/activity
+GET /api/wallets/{address}/transactions
+GET /api/wallets/{address}/positions
+GET /api/wallets/{address}/pnl
+
+Use:
+
+Helius → on-chain activity
+
+Birdeye → trading/position/PnL
+
+Solscan → verification
+
+The detailed wallet-identification functionality will be expanded later, so structure this in a way that can easily accept additional wallet intelligence features.
+
+---
+
+19. Watchlist
+
+Create:
+
+POST   /api/watchlist
+GET    /api/watchlist
+DELETE /api/watchlist/{ca}
+
+Users must be authenticated.
+
+When adding a token:
+
+1. Validate the token.
+2. Associate it with the authenticated Supabase user.
+3. Store the CA.
+4. Store the current/reference price.
+5. Set the default alert threshold to 20%.
+6. Enable monitoring.
+
+---
+
+20. Watchlist Monitoring
+
+Create a backend monitoring service.
+
+It should:
+
+1. Retrieve current prices for watchlisted tokens.
+2. Compare against the correct reference price.
+3. Detect a 20% increase.
+4. Trigger an alert.
+5. Prevent duplicate alerts.
+6. Update monitoring state.
+
+Use efficient polling, batching, caching or provider real-time/webhook functionality where appropriate.
+
+Do not continuously make expensive API requests unnecessarily.
+
+---
+
+21. Telegram Alerts
+
+Prepare the backend for Telegram Bot API integration.
+
+Flow:
+
+Watchlisted token
+       ↓
+Price monitoring
+       ↓
++20% movement
+       ↓
+Alert triggered
+       ↓
+Telegram Bot API
+       ↓
+User receives notification
+
+Telegram credentials must remain server-side.
+
+The bot connection should be associated with the user's Supabase account.
+
+---
+
+22. FastAPI ↔ Vercel
+
+The frontend will eventually be hosted on Vercel.
+
+The backend will be hosted on Render.
+
+They communicate through HTTPS.
+
+Example:
+
+Vercel frontend
+https://dyorly.com
+        ↓
+HTTPS request
+        ↓
+Render backend
+https://api.dyorly.com
+
+The frontend JavaScript should call the FastAPI API URL.
+
+Example:
+
+fetch(`${API_BASE_URL}/api/tokens/analyze`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        ca: tokenAddress
+    })
+});
+
+Do not hardcode API keys into the frontend.
+
+---
+
+23. CORS
+
+Configure FastAPI CORS.
+
+During development, allow the local frontend origin.
+
+For production, allow the actual Dyorly Vercel/custom domain.
+
+Do not use unrestricted "*" CORS in production when authenticated/private endpoints are involved.
+
+Make the allowed origins configurable through environment variables.
+
+---
+
+24. Render Deployment
+
+The FastAPI backend will be deployed on Render.
+
+Configure Render with:
+
+- Python runtime
+- Build command
+- Start command
+- Environment variables
+- Supabase credentials
+- Helius API key
+- Birdeye API key
+- Solscan API key
+- Any Telegram credentials
+
+The backend should run with Uvicorn.
+
+For example:
+
+uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+
+Use the actual project module path after inspecting the project.
+
+After deployment, Render provides the backend URL.
+
+Use that URL as the production "API_BASE_URL" for the frontend.
+
+---
+
+25. Local Development
+
+The project should work locally as:
+
+HTML/CSS/JS frontend
+        ↓
+localhost:8000
+        ↓
+FastAPI
+        ↓
+APIs + Supabase
+
+The backend should have a health endpoint:
+
+GET /health
+
+Return something simple such as:
+
+{
+  "status": "ok"
+}
+
+Also provide useful provider-status diagnostics for development without exposing secrets.
+
+---
+
+26. Security
+
+Implement:
+
+- Environment variables
+- Supabase authentication
+- Supabase Row Level Security
+- Request validation
+- Wallet validation
+- Token CA validation
+- API rate-limit handling
+- Provider timeouts
+- Error handling
+- Server-side secrets
+- CORS
+- No private credentials in frontend
+- No ".env" committed to Git
+
+Never return API keys in API responses.
+
+Never log API keys.
+
+Never expose the Supabase service-role key.
+
+---
+
+27. API Efficiency
+
+Dyorly will make many analytics requests, so avoid unnecessary API consumption.
+
+Implement:
+
+- Caching
+- Request deduplication
+- Reasonable cache expiration
+- Provider-specific timeouts
+- Retry handling
+- Rate-limit handling
+- Batch requests where supported
+- Real-time/webhook functionality where appropriate
+
+Do not repeatedly request the same token information if it has not changed.
+
+Especially optimize Birdeye usage because API usage/compute limits need to be respected.
+
+---
+
+28. Error Handling
+
+If Birdeye fails, Dyorly should not necessarily fail completely.
+
+If Helius fails, return whatever other information is safely available.
+
+If Solscan fails, continue using Helius/Birdeye where possible.
+
+If DexScreener fails, continue using the other providers.
+
+Return missing fields as:
+
+null
+
+rather than inventing values.
+
+Handle:
+
+- Invalid CA
+- Invalid wallet address
+- Token not found
+- Wallet not found
+- API timeout
+- API rate limit
+- Provider downtime
+- Missing metadata
+- Missing PnL
+- Missing holder information
+
+---
+
+29. Important API Source Rules
+
+Use the providers according to their strengths:
+
+Helius
+
+Source of truth for on-chain activity.
+
+Birdeye
+
+Source of truth for market/trading analytics where available.
+
+DexScreener
+
+DEX/token enrichment and cross-checking.
+
+Solscan
+
+Blockchain verification and research.
+
+Supabase
+
+Application database + authentication.
+
+Do not unnecessarily query multiple providers for the same information.
+
+---
+
+30. Do Not Build Fake Data
+
+Remove any mock analytics once real API integration is implemented.
+
+Do not create fake:
+
+- Prices
+- Market caps
+- Holders
+- Wallets
+- PnL
+- Transactions
+- Volume
+- Liquidity
+- Buyer data
+
+Everything presented as real analytics must come from the connected APIs or be transparently derived from their data.
+
+---
+
+31. First Development Phase
+
+Before changing the existing frontend significantly:
+
+1. Inspect the entire existing Dyorly project.
+2. Identify the current HTML/CSS/JS structure.
+3. Identify the existing ".env" variables.
+4. Verify Helius connection.
+5. Verify Birdeye connection.
+6. Verify Solscan connection.
+7. Verify DexScreener connection.
+8. Create the FastAPI backend.
+9. Create Supabase connection.
+10. Create the database schema.
+11. Create "/health".
+12. Create the first "/api/tokens/analyze" endpoint.
+13. Test the endpoint using a real Solana token CA.
+14. Return normalized real data.
+15. Only then connect the existing frontend to the backend.
+
+Do not rewrite the existing Dyorly frontend unnecessarily.
+
+---
+
+Final Architecture
+
+The completed foundation should be:
+
+                         DYORLY
+                           │
+                           ▼
+                HTML + CSS + Vanilla JS
+                           │
+                           │ HTTPS
+                           ▼
+                 FastAPI Backend
+                      Render
+                           │
+       ┌───────────────────┼───────────────────┐
+       │                   │                   │
+       ▼                   ▼                   ▼
+    Helius              Birdeye             Solscan
+       │                   │                   │
+       └───────────────────┼───────────────────┘
+                           │
+                     DexScreener
+                           │
+                           ▼
+                       Supabase
+                    ┌──────┴──────┐
+                    │             │
+                PostgreSQL      Auth
+                    │
+                    ▼
+              Watchlists /
+             User Data /
+             Monitoring
+                    │
+                    ▼
+              Telegram Alerts
+
+The important separation is:
+
+Frontend = presentation
+
+FastAPI = business logic + API integration
+
+Supabase = database + authentication
+
+Helius/Birdeye/DexScreener/Solscan = external analytics data
+
+Render = backend hosting
+
+Vercel = frontend hosting
+
+Build this foundation first and keep the architecture modular so additional Dyorly wallet-analysis features can be added later without restructuring the entire project.
